@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
+
 import {
   ArrowRight,
   Heart,
@@ -9,83 +10,162 @@ import {
   Plus,
   ShoppingCart,
 } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
 
-import { productsMock } from "../data/products.mock";
+import {
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+
 import { showSuccess } from "../../../lib/toast";
+
 import { useCart } from "../../cart/context/useCart";
+
 import { useFavorites } from "../../favorites/context/useFavorites";
+
+import {
+  useProduct,
+} from "../hooks/useProducts";
 
 function ProductDetailsPage() {
   const { id } = useParams();
-  const navigate = useNavigate();
 
-  const { addToCart } = useCart();
+  const navigate =
+    useNavigate();
+
+  const { addToCart } =
+    useCart();
 
   const {
     toggleFavorite,
     isFavorite,
   } = useFavorites();
 
-  const [quantity, setQuantity] = useState(1);
+  const [
+    quantity,
+    setQuantity,
+  ] = useState(1);
 
-  const product = useMemo(() => {
-    return productsMock.find(
-      (item) => String(item.id) === String(id),
-    );
-  }, [id]);
+  const {
+    data: product,
+    isPending,
+    isError,
+    error,
+  } = useProduct(id);
 
-  if (!product || !product.isActive) {
+  if (isPending) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-5">
-        <p className="text-text-muted">
-          المنتج غير موجود
-        </p>
+      <div
+        className="
+          flex min-h-screen
+          items-center justify-center
+          bg-[#f8f9fa]
+        "
+      >
+        <span
+          className="
+            h-8 w-8 animate-spin
+            rounded-full border-2
+            border-gray-200
+            border-t-secondary
+          "
+        />
       </div>
     );
   }
 
-  const productIsFavorite = isFavorite(product.id);
+  if (
+    isError ||
+    !product ||
+    !product.isActive
+  ) {
+    return (
+      <div
+        className="
+          flex min-h-screen
+          items-center justify-center
+          bg-[#f8f9fa] px-5
+        "
+      >
+        <div className="text-center">
+          <p className="font-semibold text-primary">
+            المنتج غير موجود
+          </p>
+
+          {isError && (
+            <p className="mt-2 text-sm text-text-muted">
+              {error?.message ||
+                "تعذر تحميل المنتج"}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const productIsFavorite =
+    isFavorite(product.id);
 
   const hasDiscount =
-    product.discountPercentage > 0;
+    product.discountPercentage >
+    0;
 
-  const finalPrice = hasDiscount
-    ? Math.round(
-        product.price -
-          product.price *
-            (product.discountPercentage / 100),
-      )
-    : product.price;
+  const finalPrice =
+    hasDiscount
+      ? Math.round(
+          product.price -
+            product.price *
+              (
+                product.discountPercentage /
+                100
+              ),
+        )
+      : product.price;
 
   const increaseQuantity = () => {
-    if (quantity < product.stock) {
-      setQuantity((current) => current + 1);
+    if (
+      quantity <
+      product.stock
+    ) {
+      setQuantity(
+        (current) =>
+          current + 1,
+      );
     }
   };
 
   const decreaseQuantity = () => {
     if (quantity > 1) {
-      setQuantity((current) => current - 1);
+      setQuantity(
+        (current) =>
+          current - 1,
+      );
     }
   };
 
   const handleAddToCart = () => {
-    addToCart(product, quantity);
-
-   
+    addToCart(
+      product,
+      quantity,
+    );
   };
 
   const handleShare = async () => {
     const shareData = {
-      title: product.name,
-      text: product.name,
-      url: window.location.href,
+      title:
+        product.name,
+
+      text:
+        product.name,
+
+      url:
+        window.location.href,
     };
 
     if (navigator.share) {
       try {
-        await navigator.share(shareData);
+        await navigator.share(
+          shareData,
+        );
       } catch {
         // المستخدم قفل نافذة المشاركة
       }
@@ -98,7 +178,9 @@ function ProductDetailsPage() {
         window.location.href,
       );
 
-      showSuccess("تم نسخ رابط المنتج");
+      showSuccess(
+        "تم نسخ رابط المنتج",
+      );
     } catch {
       // لو المتصفح منع clipboard
     }
@@ -117,15 +199,20 @@ function ProductDetailsPage() {
       >
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={() =>
+            navigate(-1)
+          }
           aria-label="رجوع"
           className="
-            flex h-10 w-10 items-center
-            justify-center text-secondary
+            flex h-10 w-10
+            items-center justify-center
+            text-secondary
             transition active:scale-90
           "
         >
-          <ArrowRight size={27} />
+          <ArrowRight
+            size={27}
+          />
         </button>
 
         <div className="flex-1 text-center text-3xl font-bold">
@@ -134,15 +221,20 @@ function ProductDetailsPage() {
 
         <button
           type="button"
-          onClick={handleShare}
+          onClick={
+            handleShare
+          }
           aria-label="مشاركة المنتج"
           className="
-            flex h-10 w-10 items-center
-            justify-center text-secondary
+            flex h-10 w-10
+            items-center justify-center
+            text-secondary
             transition active:scale-90
           "
         >
-          <Share2 size={24} />
+          <Share2
+            size={24}
+          />
         </button>
       </header>
 
@@ -151,8 +243,12 @@ function ProductDetailsPage() {
         <section className="overflow-hidden rounded-b-3xl bg-white">
           <div className="relative aspect-square w-full">
             <img
-              src={product.image}
-              alt={product.name}
+              src={
+                product.image
+              }
+              alt={
+                product.name
+              }
               className="
                 h-full w-full bg-white
                 object-contain p-8
@@ -169,7 +265,9 @@ function ProductDetailsPage() {
                   shadow-sm
                 "
               >
-                {product.badge}
+                {
+                  product.badge
+                }
               </div>
             )}
           </div>
@@ -180,11 +278,15 @@ function ProductDetailsPage() {
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
               <h1 className="text-2xl font-bold leading-9 text-primary">
-                {product.name}
+                {
+                  product.name
+                }
               </h1>
 
               <p className="mt-1 text-sm text-gray-500">
-                {product.unit}
+                {
+                  product.unit
+                }
               </p>
 
               <div className="mt-2 flex items-center gap-2">
@@ -195,12 +297,18 @@ function ProductDetailsPage() {
                   />
 
                   <span className="text-sm font-semibold text-text-main">
-                    {product.rating}
+                    {
+                      product.rating
+                    }
                   </span>
                 </div>
 
                 <span className="text-sm text-gray-500">
-                  ({product.reviewsCount} تقييم)
+                  (
+                  {
+                    product.reviewsCount
+                  }{" "}
+                  تقييم)
                 </span>
               </div>
             </div>
@@ -208,7 +316,9 @@ function ProductDetailsPage() {
             <button
               type="button"
               onClick={() =>
-                toggleFavorite(product)
+                toggleFavorite(
+                  product,
+                )
               }
               aria-label={
                 productIsFavorite
@@ -247,17 +357,25 @@ function ProductDetailsPage() {
             {hasDiscount && (
               <>
                 <span className="mb-1 text-lg text-gray-400 line-through">
-                  {product.price} ج.م
+                  {
+                    product.price
+                  }{" "}
+                  ج.م
                 </span>
 
                 <span
                   className="
-                    mb-1 rounded-md bg-red-100
-                    px-2 py-1 text-sm
-                    font-bold text-red-700
+                    mb-1 rounded-md
+                    bg-red-100 px-2 py-1
+                    text-sm font-bold
+                    text-red-700
                   "
                 >
-                  -{product.discountPercentage}%
+                  -
+                  {
+                    product.discountPercentage
+                  }
+                  %
                 </span>
               </>
             )}
@@ -270,18 +388,22 @@ function ProductDetailsPage() {
             className="
               flex items-center gap-4
               rounded-3xl border
-              border-gray-100 bg-white p-4
+              border-gray-100
+              bg-white p-4
               shadow-[0_4px_20px_rgba(0,27,61,0.05)]
             "
           >
             <div
               className="
-                flex h-12 w-12 items-center
-                justify-center rounded-full
-                bg-green-50 text-secondary
+                flex h-12 w-12
+                items-center justify-center
+                rounded-full bg-green-50
+                text-secondary
               "
             >
-              <Truck size={24} />
+              <Truck
+                size={24}
+              />
             </div>
 
             <div>
@@ -290,7 +412,9 @@ function ProductDetailsPage() {
               </h3>
 
               <p className="text-sm text-text-muted">
-                {product.deliveryText}
+                {
+                  product.deliveryText
+                }
               </p>
             </div>
           </div>
@@ -303,7 +427,9 @@ function ProductDetailsPage() {
           </h2>
 
           <p className="leading-8 text-text-muted">
-            {product.description}
+            {
+              product.description
+            }
           </p>
         </section>
       </main>
@@ -323,23 +449,31 @@ function ProductDetailsPage() {
           className="
             flex h-12 items-center
             rounded-xl border
-            border-outline bg-gray-50 p-1
+            border-outline
+            bg-gray-50 p-1
           "
         >
           <button
             type="button"
-            onClick={decreaseQuantity}
-            disabled={quantity === 1}
+            onClick={
+              decreaseQuantity
+            }
+            disabled={
+              quantity === 1
+            }
             aria-label="تقليل الكمية"
             className="
-              flex h-full w-10 items-center
-              justify-center rounded-lg
-              transition hover:bg-gray-200
+              flex h-full w-10
+              items-center justify-center
+              rounded-lg transition
+              hover:bg-gray-200
               disabled:cursor-not-allowed
               disabled:opacity-40
             "
           >
-            <Minus size={19} />
+            <Minus
+              size={19}
+            />
           </button>
 
           <span className="w-8 text-center text-lg font-semibold">
@@ -348,30 +482,43 @@ function ProductDetailsPage() {
 
           <button
             type="button"
-            onClick={increaseQuantity}
-            disabled={quantity >= product.stock}
+            onClick={
+              increaseQuantity
+            }
+            disabled={
+              quantity >=
+              product.stock
+            }
             aria-label="زيادة الكمية"
             className="
-              flex h-full w-10 items-center
-              justify-center rounded-lg
-              transition hover:bg-gray-200
+              flex h-full w-10
+              items-center justify-center
+              rounded-lg transition
+              hover:bg-gray-200
               disabled:cursor-not-allowed
               disabled:opacity-40
             "
           >
-            <Plus size={19} />
+            <Plus
+              size={19}
+            />
           </button>
         </div>
 
         {/* Add To Cart */}
         <button
           type="button"
-          onClick={handleAddToCart}
-          disabled={product.stock <= 0}
+          onClick={
+            handleAddToCart
+          }
+          disabled={
+            product.stock <= 0
+          }
           className="
-            flex h-12 flex-1 items-center
-            justify-center gap-2
-            rounded-xl bg-secondary
+            flex h-12 flex-1
+            items-center justify-center
+            gap-2 rounded-xl
+            bg-secondary
             text-lg font-semibold
             text-white transition
             active:scale-[0.98]
@@ -379,7 +526,9 @@ function ProductDetailsPage() {
             disabled:opacity-50
           "
         >
-          <ShoppingCart size={21} />
+          <ShoppingCart
+            size={21}
+          />
 
           {product.stock > 0
             ? "ضيف للسلة"
@@ -390,4 +539,4 @@ function ProductDetailsPage() {
   );
 }
 
-export default ProductDetailsPage;
+export default ProductDetailsPage;  

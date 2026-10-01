@@ -1,4 +1,4 @@
-import logo from '../../../assets/images/logo.png'
+import logo from "../../../assets/images/logo.png";
 
 function Invoice({
   orderNumber,
@@ -6,14 +6,10 @@ function Invoice({
   customer,
   subtotal,
   deliveryFee,
-  discountPercentage = 0,
   discountAmount = 0,
   appliedCoupon = null,
-  getFinalPrice,
+  total,
 }) {
-  const total =
-    subtotal - discountAmount + deliveryFee
-
   return (
     <div
       id="invoice"
@@ -27,7 +23,8 @@ function Invoice({
       <div
         className="
           border-b border-dashed
-          border-gray-300 pb-5 text-center
+          border-gray-300 pb-5
+          text-center
         "
       >
         <img
@@ -52,7 +49,8 @@ function Invoice({
       <div
         className="
           border-b border-dashed
-          border-gray-300 py-5 text-sm
+          border-gray-300 py-5
+          text-sm
         "
       >
         <h3 className="mb-3 font-bold text-primary">
@@ -67,12 +65,6 @@ function Invoice({
           <p>
             الموبايل: {customer.phone}
           </p>
-
-          {customer.email && (
-            <p>
-              الإيميل: {customer.email}
-            </p>
-          )}
 
           <p>
             العنوان: {customer.address}
@@ -94,14 +86,20 @@ function Invoice({
         <div className="space-y-4">
           {items.map((item) => {
             const itemPrice =
-              getFinalPrice(item)
+              item.finalPrice ??
+              item.price;
 
             const itemTotal =
-              itemPrice * item.quantity
+              item.lineTotal ??
+              itemPrice *
+                item.quantity;
 
             return (
               <div
-                key={item.id}
+                key={
+                  item.orderItemId ??
+                  item.id
+                }
                 className="
                   flex justify-between
                   gap-4 text-sm
@@ -113,7 +111,7 @@ function Invoice({
                   </p>
 
                   <p className="mt-1 text-gray-500">
-                    {item.quantity} ×{' '}
+                    {item.quantity} ×{" "}
                     {itemPrice} ج.م
                   </p>
                 </div>
@@ -122,7 +120,7 @@ function Invoice({
                   {itemTotal} ج.م
                 </span>
               </div>
-            )
+            );
           })}
         </div>
       </div>
@@ -146,16 +144,10 @@ function Invoice({
                 الخصم
               </span>
 
-              {discountPercentage > 0 && (
-                <span>
-                  {' '}
-                  ({discountPercentage}%)
-                </span>
-              )}
-
               {appliedCoupon && (
                 <div className="mt-1 text-xs text-gray-500">
-                  كود الخصم: {appliedCoupon}
+                  كود الخصم:{" "}
+                  {appliedCoupon}
                 </div>
               )}
             </div>
@@ -210,7 +202,7 @@ function Invoice({
         </p>
       </div>
     </div>
-  )
+  );
 }
 
-export default Invoice
+export default Invoice;

@@ -2,72 +2,164 @@ import {
   ChevronLeft,
   Heart,
   LogOut,
-  Mail,
   MapPin,
   Phone,
   ReceiptText,
   UserRound,
 } from "lucide-react";
 
-import { useNavigate } from "react-router-dom";
+import {
+  useNavigate,
+} from "react-router-dom";
 
 import BottomNav from "../../../components/layout/BottomNav";
 
-import { useAuth } from "../../auth/context/useAuth";
-import { useFavorites } from "../../favorites/context/useFavorites";
+import {
+  showError,
+} from "../../../lib/toast";
+
+import {
+  useAuth,
+} from "../../auth/context/useAuth";
+
+import {
+  useFavorites,
+} from "../../favorites/context/useFavorites";
+
+import {
+  useMyProfile,
+} from "./../hooks/useMyProfile";
 
 function AccountPage() {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-  const { user, logout } = useAuth();
+  const {
+    logout,
+  } = useAuth();
 
-  const { favoritesCount } = useFavorites();
+  const {
+    favoritesCount,
+  } = useFavorites();
 
-  // Mock مؤقت لحد الباك
-  const currentUser = user || {
-    name: "مودي",
-    phone: "01007349516",
-    email: "mody@example.com",
-    address: "شارع التحرير، الدقي، الجيزة",
-  };
+  const {
+    data: currentUser,
+    isPending,
+    isError,
+    error,
+  } = useMyProfile();
 
-  const firstLetter = currentUser.name?.trim()?.charAt(0) || "س";
+  const handleLogout = async () => {
+    try {
+      await logout();
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login", { replace: true });
+      navigate(
+        "/login",
+        {
+          replace: true,
+        },
+      );
+    } catch (logoutError) {
+      showError(
+        logoutError?.message ||
+          "تعذر تسجيل الخروج",
+      );
+    }
   };
 
   const menuItems = [
     {
       label: "طلباتي",
       icon: ReceiptText,
-      onClick: () => navigate("/orders"),
+      onClick: () =>
+        navigate("/orders"),
     },
     {
       label: "المفضلة",
       icon: Heart,
       badge: favoritesCount,
-      onClick: () => navigate("/favorites"),
+      onClick: () =>
+        navigate("/favorites"),
     },
     {
       label: "بياناتي",
       icon: UserRound,
-      onClick: () => navigate("/my-data"),
+      onClick: () =>
+        navigate("/my-data"),
     },
   ];
+
+  if (isPending) {
+    return (
+      <div
+        className="
+          flex min-h-screen
+          items-center justify-center
+          bg-[#f8f9fa]
+        "
+      >
+        <span
+          className="
+            h-8 w-8 animate-spin
+            rounded-full border-2
+            border-gray-200
+            border-t-secondary
+          "
+        />
+      </div>
+    );
+  }
+
+  if (
+    isError ||
+    !currentUser
+  ) {
+    return (
+      <div
+        className="
+          flex min-h-screen
+          items-center justify-center
+          bg-[#f8f9fa] px-5
+        "
+      >
+        <div className="text-center">
+          <p className="font-semibold text-primary">
+            تعذر تحميل بيانات الحساب
+          </p>
+
+          <p className="mt-2 text-sm text-gray-500">
+            {error?.message ||
+              "حاول مرة أخرى"}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const firstLetter =
+    currentUser.fullName
+      ?.trim()
+      ?.charAt(0) ||
+    "س";
+
+  const address =
+    currentUser.address
+      ?.fullAddress ||
+    "لا يوجد عنوان";
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] pb-24">
       <header
         className="
           sticky top-0 z-40
-          flex h-16 items-center justify-center
-          bg-white
+          flex h-16 items-center
+          justify-center bg-white
           shadow-[0_4px_20px_rgba(0,27,61,0.05)]
         "
       >
-        <h1 className="text-2xl font-bold text-secondary">حسابي</h1>
+        <h1 className="text-2xl font-bold text-secondary">
+          حسابي
+        </h1>
       </header>
 
       <main className="mx-auto w-full max-w-md px-5 py-5">
@@ -81,10 +173,12 @@ function AccountPage() {
         >
           <div
             className="
-              flex h-20 w-20 shrink-0
-              items-center justify-center
+              flex h-20 w-20
+              shrink-0 items-center
+              justify-center
               rounded-full bg-secondary
-              text-3xl font-bold text-white
+              text-3xl font-bold
+              text-white
             "
           >
             {firstLetter}
@@ -92,21 +186,27 @@ function AccountPage() {
 
           <div className="min-w-0 flex-1">
             <h2 className="text-xl font-bold text-primary">
-              {currentUser.name}
+              {currentUser.fullName}
             </h2>
 
             <div className="mt-3 space-y-2 text-sm text-gray-500">
               <p className="flex items-center gap-2">
-                <Phone size={15} />
+                <Phone
+                  size={15}
+                />
+
                 {currentUser.phone}
               </p>
+
               <p className="flex items-start gap-2">
-                <MapPin size={15} className="mt-1 shrink-0" />
-                <span>{currentUser.address}</span>
-              </p>
-              <p className="flex items-center gap-2">
-                <Mail size={15} />
-                {currentUser.email}
+                <MapPin
+                  size={15}
+                  className="mt-1 shrink-0"
+                />
+
+                <span>
+                  {address}
+                </span>
               </p>
             </div>
           </div>
@@ -120,57 +220,84 @@ function AccountPage() {
             shadow-[0_4px_20px_rgba(0,27,61,0.05)]
           "
         >
-          {menuItems.map((item) => {
-            const Icon = item.icon;
+          {menuItems.map(
+            (item) => {
+              const Icon =
+                item.icon;
 
-            return (
-              <button
-                key={item.label}
-                type="button"
-                onClick={item.onClick}
-                className="
-                  flex w-full items-center
-                  justify-between
-                  border-b border-gray-100
-                  p-5 text-right
-                  transition
-                  last:border-none
-                  hover:bg-gray-50
-                  active:bg-gray-100
-                "
-              >
-                <div className="flex items-center gap-3">
-                  <Icon size={22} className="text-secondary" />
+              return (
+                <button
+                  key={
+                    item.label
+                  }
+                  type="button"
+                  onClick={
+                    item.onClick
+                  }
+                  className="
+                    flex w-full
+                    items-center
+                    justify-between
+                    border-b
+                    border-gray-100
+                    p-5 text-right
+                    transition
+                    last:border-none
+                    hover:bg-gray-50
+                    active:bg-gray-100
+                  "
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon
+                      size={22}
+                      className="text-secondary"
+                    />
 
-                  <span className="font-semibold text-primary">
-                    {item.label}
-                  </span>
-
-                  {item.badge > 0 && (
-                    <span
-                      className="
-                        flex h-6 min-w-6
-                        items-center justify-center
-                        rounded-full bg-green-50
-                        px-2 text-xs font-bold
-                        text-secondary
-                      "
-                    >
-                      {item.badge}
+                    <span className="font-semibold text-primary">
+                      {
+                        item.label
+                      }
                     </span>
-                  )}
-                </div>
 
-                <ChevronLeft size={20} className="text-gray-400" />
-              </button>
-            );
-          })}
+                    {item.badge >
+                      0 && (
+                      <span
+                        className="
+                          flex h-6
+                          min-w-6
+                          items-center
+                          justify-center
+                          rounded-full
+                          bg-green-50
+                          px-2 text-xs
+                          font-bold
+                          text-secondary
+                        "
+                      >
+                        {
+                          item.badge
+                        }
+                      </span>
+                    )}
+                  </div>
+
+                  <ChevronLeft
+                    size={20}
+                    className="text-gray-400"
+                  />
+                </button>
+              );
+            },
+          )}
 
           <button
             type="button"
-            onClick={handleLogout}
+            onClick={
+              handleLogout
+            }
             className="
-              flex w-full items-center
+              flex w-full
+              items-center
               justify-between p-5
               text-right transition
               hover:bg-red-50
@@ -178,16 +305,26 @@ function AccountPage() {
             "
           >
             <div className="flex items-center gap-3">
-              <LogOut size={22} className="text-red-500" />
+              <LogOut
+                size={22}
+                className="text-red-500"
+              />
 
-              <span className="font-semibold text-red-500">تسجيل الخروج</span>
+              <span className="font-semibold text-red-500">
+                تسجيل الخروج
+              </span>
             </div>
 
-            <ChevronLeft size={20} className="text-red-300" />
+            <ChevronLeft
+              size={20}
+              className="text-red-300"
+            />
           </button>
         </section>
 
-        <p className="py-6 text-center text-xs text-gray-400">SOUQIA 2026</p>
+        <p className="py-6 text-center text-xs text-gray-400">
+          SOUQIA 2026
+        </p>
       </main>
 
       <BottomNav />

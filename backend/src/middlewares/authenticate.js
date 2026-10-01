@@ -1,20 +1,42 @@
-import { env } from "../config/env.js";
 import { prisma } from "../database/prisma.js";
-import { AppError } from "../shared/errors/AppError.js";
+
+import {
+  AppError,
+} from "../shared/errors/AppError.js";
 
 import {
   clearSessionCookie,
+  getSessionCookieName,
   hashSessionToken,
 } from "../modules/auth/auth.session.js";
 
 export async function authenticate(
   req,
   res,
-  next
+  next,
 ) {
+  /*
+  |--------------------------------------------------------------------------
+  | Resolve Correct Session Cookie
+  |--------------------------------------------------------------------------
+  |
+  | Customer request:
+  |   soqiaa_session
+  |
+  | Admin request:
+  |   soqiaa_session_admin
+  |
+  | Never allow one application to authenticate
+  | using the other application's session.
+  |--------------------------------------------------------------------------
+  */
+
+  const cookieName =
+    getSessionCookieName(req);
+
   const sessionToken =
     req.cookies?.[
-      env.sessionCookieName
+      cookieName
     ];
 
   if (!sessionToken) {
@@ -22,14 +44,14 @@ export async function authenticate(
       new AppError(
         "Authentication required",
         401,
-        "AUTHENTICATION_REQUIRED"
-      )
+        "AUTHENTICATION_REQUIRED",
+      ),
     );
   }
 
   const tokenHash =
     hashSessionToken(
-      sessionToken
+      sessionToken,
     );
 
   const session =
@@ -39,60 +61,76 @@ export async function authenticate(
       },
 
       select: {
-  id: true,
-  csrfTokenHash: true,
-  expiresAt: true,
-  revokedAt: true,
+        id: true,
+        csrfTokenHash: true,
+        expiresAt: true,
+        revokedAt: true,
 
-  user: {
-    select: {
-      id: true,
-      fullName: true,
-      phone: true,
-      role: true,
-      isActive: true,
-    },
-  },
-},
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            phone: true,
+            role: true,
+            isActive: true,
+          },
+        },
+      },
     });
 
   const sessionIsInvalid =
     !session ||
     session.revokedAt ||
-    session.expiresAt <= new Date();
+    session.expiresAt <=
+      new Date();
 
   if (sessionIsInvalid) {
-    clearSessionCookie(res);
+    clearSessionCookie(
+      res,
+      cookieName,
+    );
 
     return next(
       new AppError(
         "Authentication required",
         401,
-        "AUTHENTICATION_REQUIRED"
-      )
+        "AUTHENTICATION_REQUIRED",
+      ),
     );
   }
 
-  if (!session.user.isActive) {
-    clearSessionCookie(res);
+  if (
+    !session.user.isActive
+  ) {
+    clearSessionCookie(
+      res,
+      cookieName,
+    );
 
     return next(
       new AppError(
         "Account is disabled",
         403,
-        "ACCOUNT_DISABLED"
-      )
+        "ACCOUNT_DISABLED",
+      ),
     );
   }
 
-  req.user = session.user;
+  req.user =
+    session.user;
 
- req.session = {
-  id: session.id,
-  csrfTokenHash:
-    session.csrfTokenHash,
-  expiresAt: session.expiresAt,
-};
+  req.session = {
+    id:
+      session.id,
+
+    csrfTokenHash:
+      session.csrfTokenHash,
+
+    expiresAt:
+      session.expiresAt,
+
+    cookieName,
+  };
 
   next();
 }

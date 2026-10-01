@@ -11,6 +11,7 @@ import {
 
 import {
   createProductController,
+  deleteProductController,
   listAdminProducts,
   listPublicProducts,
   showAdminProduct,
@@ -118,6 +119,20 @@ router.patch(
   ),
 
   updateProductController
+);
+
+router.delete(
+  "/admin/products/:id",
+  authenticate,
+  requireCsrf,
+  authorizeRole("ADMIN"),
+
+  validate(
+    productIdParamsSchema,
+    "params"
+  ),
+
+  deleteProductController
 );
 
 export default router;

@@ -1,118 +1,236 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import {
+  Link,
+  useNavigate,
+} from 'react-router-dom'
 
 import TextField from '../../../components/ui/TextField'
 import PasswordField from '../../../components/ui/PasswordField'
 
 import { validateLogin } from '../validation/loginValidation'
-import { showSuccess } from '../../../lib/toast'
+import { login } from '../../../services/auth.service'
+import { useAuth } from '../context/useAuth'
+
+import {
+  showError,
+  showSuccess,
+} from '../../../lib/toast'
 
 const initialFormData = {
-  identifier: '',
+  phone: '',
   password: '',
 }
 
 function LoginForm() {
-  const [formData, setFormData] = useState(initialFormData)
-  const [errors, setErrors] = useState({})
-  const [touched, setTouched] = useState({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const navigate = useNavigate()
+
+  const {
+    setAuthData,
+  } = useAuth()
+
+  const [
+    formData,
+    setFormData,
+  ] = useState(initialFormData)
+
+  const [
+    errors,
+    setErrors,
+  ] = useState({})
+
+  const [
+    touched,
+    setTouched,
+  ] = useState({})
+
+  const [
+    isSubmitting,
+    setIsSubmitting,
+  ] = useState(false)
 
   const handleChange = (event) => {
-    const { name, value } = event.target
+    const {
+      name,
+      value,
+    } = event.target
 
     const updatedFormData = {
       ...formData,
       [name]: value,
     }
 
-    setFormData(updatedFormData)
+    setFormData(
+      updatedFormData,
+    )
 
     if (touched[name]) {
-      const validationErrors = validateLogin(updatedFormData)
+      const validationErrors =
+        validateLogin(
+          updatedFormData,
+        )
 
-      setErrors((current) => ({
-        ...current,
-        [name]: validationErrors[name],
-      }))
+      setErrors(
+        (current) => ({
+          ...current,
+          [name]:
+            validationErrors[
+              name
+            ],
+        }),
+      )
     }
   }
 
   const handleBlur = (event) => {
-    const { name } = event.target
+    const {
+      name,
+    } = event.target
 
-    setTouched((current) => ({
-      ...current,
-      [name]: true,
-    }))
+    setTouched(
+      (current) => ({
+        ...current,
+        [name]: true,
+      }),
+    )
 
-    const validationErrors = validateLogin(formData)
+    const validationErrors =
+      validateLogin(
+        formData,
+      )
 
-    setErrors((current) => ({
-      ...current,
-      [name]: validationErrors[name],
-    }))
+    setErrors(
+      (current) => ({
+        ...current,
+        [name]:
+          validationErrors[
+            name
+          ],
+      }),
+    )
   }
 
-  const handleSubmit = async (event) => {
-    event.preventDefault()
+  const handleSubmit =
+    async (event) => {
+      event.preventDefault()
 
-    const validationErrors = validateLogin(formData)
+      if (isSubmitting) {
+        return
+      }
 
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors)
+      const validationErrors =
+        validateLogin(
+          formData,
+        )
 
-      setTouched({
-        identifier: true,
-        password: true,
-      })
+      if (
+        Object.keys(
+          validationErrors,
+        ).length > 0
+      ) {
+        setErrors(
+          validationErrors,
+        )
 
-      return
+        setTouched({
+          phone: true,
+          password: true,
+        })
+
+        return
+      }
+
+      setIsSubmitting(true)
+
+      try {
+        const result =
+          await login({
+            phone:
+              formData.phone
+                .trim(),
+
+            password:
+              formData.password,
+          })
+
+        setAuthData({
+          user:
+            result.data.user,
+        })
+
+        showSuccess(
+          'تم تسجيل الدخول بنجاح',
+        )
+
+        navigate(
+          '/',
+          {
+            replace: true,
+          },
+        )
+      } catch (error) {
+        showError(
+          error?.message ||
+            'تعذر تسجيل الدخول',
+        )
+      } finally {
+        setIsSubmitting(
+          false,
+        )
+      }
     }
-
-    setIsSubmitting(true)
-
-    try {
-      // مؤقت فقط لحد ما نوصل الـ Backend
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      showSuccess('تم تسجيل الدخول بنجاح')
-
-      console.log('Login data:', formData)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
 
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={
+        handleSubmit
+      }
       className="space-y-4"
       noValidate
     >
       <TextField
-        label="رقم الموبايل أو الإيميل"
-        id="identifier"
-        value={formData.identifier}
-        onChange={handleChange}
-        onBlur={handleBlur}
-        placeholder="أدخل رقم الموبايل أو الإيميل"
-        autoComplete="username"
-        error={errors.identifier}
-        disabled={isSubmitting}
+        label="رقم الموبايل"
+        id="phone"
+        value={
+          formData.phone
+        }
+        onChange={
+          handleChange
+        }
+        onBlur={
+          handleBlur
+        }
+        placeholder="أدخل رقم الموبايل"
+        autoComplete="tel"
+        inputMode="tel"
+        error={
+          errors.phone
+        }
+        disabled={
+          isSubmitting
+        }
       />
 
       <div>
         <PasswordField
           label="الباسورد"
           id="password"
-          value={formData.password}
-          onChange={handleChange}
-          onBlur={handleBlur}
+          value={
+            formData.password
+          }
+          onChange={
+            handleChange
+          }
+          onBlur={
+            handleBlur
+          }
           placeholder="أدخل الباسورد"
           autoComplete="current-password"
-          error={errors.password}
-          disabled={isSubmitting}
+          error={
+            errors.password
+          }
+          disabled={
+            isSubmitting
+          }
         />
 
         <div className="mt-2">
@@ -127,10 +245,15 @@ function LoginForm() {
 
       <button
         type="submit"
-        disabled={isSubmitting}
+        disabled={
+          isSubmitting
+        }
         className="
-          mt-3 w-full rounded-xl bg-secondary py-4
-          text-xl font-semibold text-white
+          mt-3 w-full
+          rounded-xl
+          bg-secondary py-4
+          text-xl font-semibold
+          text-white
           shadow-[0_4px_20px_rgba(0,27,61,0.05)]
           transition
           hover:opacity-90
@@ -143,6 +266,7 @@ function LoginForm() {
         {isSubmitting ? (
           <span className="flex items-center justify-center gap-2">
             <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+
             جاري الدخول...
           </span>
         ) : (

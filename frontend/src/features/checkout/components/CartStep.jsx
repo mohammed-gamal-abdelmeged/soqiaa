@@ -1,24 +1,172 @@
-import { useState } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
-import CartItem from '../../cart/components/CartItem'
-import { useCart } from '../../cart/context/useCart'
+import CartItem from "../../cart/components/CartItem";
 
 import {
-  showSuccess,
+  useCart,
+} from "../../cart/context/useCart";
+
+import {
+  usePreviewOrder,
+} from "../../orders/hooks/useOrders";
+
+import {
   showError,
-} from '../../../lib/toast'
+  showSuccess,
+} from "../../../lib/toast";
 
 function CartStep({
-  discountPercentage,
-  setDiscountPercentage,
   appliedCoupon,
   setAppliedCoupon,
 }) {
-  const { items, subtotal } = useCart()
+  const {
+    items,
+    subtotal,
+  } = useCart();
 
-  const [couponCode, setCouponCode] = useState('')
+  const {
+    mutateAsync: previewOrder,
+    isPending,
+  } = usePreviewOrder();
 
-  if (items.length === 0) {
+  const [
+    couponCode,
+    setCouponCode,
+  ] = useState(
+    appliedCoupon || "",
+  );
+
+  const [
+    couponPreview,
+    setCouponPreview,
+  ] = useState(null);
+
+  const [
+    appliedCartSignature,
+    setAppliedCartSignature,
+  ] = useState(null);
+
+  const cartSignature =
+    useMemo(() => {
+      return items
+        .map(
+          (item) =>
+            `${item.id}:${item.quantity}`,
+        )
+        .join("|");
+    }, [items]);
+
+  useEffect(() => {
+    if (
+      !appliedCoupon ||
+      couponPreview
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadPreview =
+      async () => {
+        try {
+          const preview =
+            await previewOrder({
+              couponCode:
+                appliedCoupon,
+            });
+
+          if (cancelled) {
+            return;
+          }
+
+          setCouponPreview(
+            preview,
+          );
+
+          setCouponCode(
+            preview.couponCode ||
+              appliedCoupon,
+          );
+
+          setAppliedCartSignature(
+            cartSignature,
+          );
+        } catch {
+          if (cancelled) {
+            return;
+          }
+
+          setCouponPreview(
+            null,
+          );
+
+          setCouponCode("");
+
+          setAppliedCoupon(
+            null,
+          );
+
+          setAppliedCartSignature(
+            null,
+          );
+        }
+      };
+
+    loadPreview();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    appliedCoupon,
+    cartSignature,
+    couponPreview,
+    previewOrder,
+    setAppliedCoupon,
+  ]);
+
+  useEffect(() => {
+    if (
+      !appliedCoupon ||
+      !appliedCartSignature
+    ) {
+      return;
+    }
+
+    if (
+      cartSignature ===
+      appliedCartSignature
+    ) {
+      return;
+    }
+
+    setCouponPreview(
+      null,
+    );
+
+    setCouponCode("");
+
+    setAppliedCoupon(
+      null,
+    );
+
+    setAppliedCartSignature(
+      null,
+    );
+  }, [
+    appliedCoupon,
+    appliedCartSignature,
+    cartSignature,
+    setAppliedCoupon,
+  ]);
+
+  if (
+    items.length === 0
+  ) {
     return (
       <div className="py-20 text-center">
         <h2 className="text-xl font-bold text-primary">
@@ -29,47 +177,112 @@ function CartStep({
           ضيف منتجات الأول عشان تكمل الطلب
         </p>
       </div>
-    )
+    );
   }
 
-  const discountAmount = Math.round(
-    subtotal * (discountPercentage / 100),
-  )
+  const displayedSubtotal =
+    couponPreview
+      ?.subtotal ??
+    subtotal;
+
+  const discountAmount =
+    couponPreview
+      ?.discountAmount ??
+    0;
 
   const totalAfterDiscount =
-    subtotal - discountAmount
+    displayedSubtotal -
+    discountAmount;
 
-  const handleApplyCoupon = () => {
-    const code = couponCode.trim().toUpperCase()
+  const handleApplyCoupon =
+    async () => {
+      const code =
+        couponCode
+          .trim()
+          .toUpperCase();
 
-    if (!code) {
-      showError('اكتب كود الخصم الأول')
-      return
-    }
+      if (!code) {
+        showError(
+          "اكتب كود الخصم الأول",
+        );
 
-    if (appliedCoupon) {
-      showError('تم تطبيق كود خصم بالفعل')
-      return
-    }
+        return;
+      }
 
-    if (code === 'SOQIA10') {
-      setDiscountPercentage(10)
-      setAppliedCoupon(code)
+      if (appliedCoupon) {
+        showError(
+          "تم تطبيق كود خصم بالفعل",
+        );
 
-      showSuccess('تم تطبيق كود الخصم بنجاح')
-      return
-    }
+        return;
+      }
 
-    showError('كود الخصم غير صحيح')
-  }
+      try {
+        const preview =
+          await previewOrder({
+            couponCode:
+              code,
+          });
 
-  const handleRemoveCoupon = () => {
-    setCouponCode('')
-    setDiscountPercentage(0)
-    setAppliedCoupon(null)
+        setCouponPreview(
+          preview,
+        );
 
-    showSuccess('تم إلغاء كود الخصم')
-  }
+        setAppliedCoupon(
+          preview.couponCode,
+        );
+
+        setCouponCode(
+          preview.couponCode,
+        );
+
+        setAppliedCartSignature(
+          cartSignature,
+        );
+
+        showSuccess(
+          "تم تطبيق كود الخصم بنجاح",
+        );
+      } catch (error) {
+        setCouponPreview(
+          null,
+        );
+
+        setAppliedCoupon(
+          null,
+        );
+
+        setAppliedCartSignature(
+          null,
+        );
+
+        showError(
+          error?.message ||
+            "كود الخصم غير صالح",
+        );
+      }
+    };
+
+  const handleRemoveCoupon =
+    () => {
+      setCouponCode("");
+
+      setCouponPreview(
+        null,
+      );
+
+      setAppliedCoupon(
+        null,
+      );
+
+      setAppliedCartSignature(
+        null,
+      );
+
+      showSuccess(
+        "تم إلغاء كود الخصم",
+      );
+    };
 
   return (
     <div className="space-y-4">
@@ -77,12 +290,14 @@ function CartStep({
         منتجات السلة
       </h2>
 
-      {items.map((item) => (
-        <CartItem
-          key={item.id}
-          item={item}
-        />
-      ))}
+      {items.map(
+        (item) => (
+          <CartItem
+            key={item.id}
+            item={item}
+          />
+        ),
+      )}
 
       <div className="rounded-2xl bg-white p-4 shadow-sm">
         <h3 className="mb-3 font-semibold text-primary">
@@ -93,47 +308,100 @@ function CartStep({
           <div className="flex gap-2">
             <input
               type="text"
-              value={couponCode}
-              onChange={(event) =>
-                setCouponCode(event.target.value)
+              value={
+                couponCode
+              }
+              onChange={(
+                event,
+              ) =>
+                setCouponCode(
+                  event.target
+                    .value,
+                )
+              }
+              disabled={
+                isPending
               }
               placeholder="اكتب الكود هنا"
               className="
-                min-w-0 flex-1 rounded-xl
-                border border-outline bg-white
-                px-3 py-3 outline-none
+                min-w-0 flex-1
+                rounded-xl
+                border border-outline
+                bg-white px-3 py-3
+                outline-none
                 focus:border-secondary
-                focus:ring-1 focus:ring-secondary
+                focus:ring-1
+                focus:ring-secondary
+                disabled:cursor-not-allowed
+                disabled:bg-gray-100
               "
             />
 
             <button
               type="button"
-              onClick={handleApplyCoupon}
+              onClick={
+                handleApplyCoupon
+              }
+              disabled={
+                isPending
+              }
               className="
-                rounded-xl bg-primary px-5
-                font-semibold text-white
+                min-w-[88px]
+                rounded-xl
+                bg-primary px-5
+                font-semibold
+                text-white
+                disabled:cursor-not-allowed
+                disabled:opacity-60
               "
             >
-              تطبيق
+              {isPending
+                ? "جاري..."
+                : "تطبيق"}
             </button>
           </div>
         ) : (
-          <div className="flex items-center justify-between rounded-xl border border-green-200 bg-green-50 px-4 py-3">
+          <div
+            className="
+              flex items-center
+              justify-between
+              rounded-xl
+              border border-green-200
+              bg-green-50
+              px-4 py-3
+            "
+          >
             <div>
               <p className="font-semibold text-secondary">
                 {appliedCoupon}
               </p>
 
-              <p className="mt-1 text-xs text-gray-500">
-                خصم {discountPercentage}% مطبق
-              </p>
+              {discountAmount >
+                0 && (
+                <p className="mt-1 text-xs text-gray-500">
+                  خصم{" "}
+                  {
+                    discountAmount
+                  }{" "}
+                  ج.م مطبق
+                </p>
+              )}
             </div>
 
             <button
               type="button"
-              onClick={handleRemoveCoupon}
-              className="text-sm font-semibold text-red-500"
+              onClick={
+                handleRemoveCoupon
+              }
+              disabled={
+                isPending
+              }
+              className="
+                text-sm font-semibold
+                text-red-500
+                disabled:cursor-not-allowed
+                disabled:opacity-50
+              "
             >
               إلغاء
             </button>
@@ -149,18 +417,26 @@ function CartStep({
             </span>
 
             <span>
-              {subtotal} ج.م
+              {
+                displayedSubtotal
+              }{" "}
+              ج.م
             </span>
           </div>
 
-          {discountAmount > 0 && (
+          {discountAmount >
+            0 && (
             <div className="flex justify-between text-secondary">
               <span>
-                الخصم ({discountPercentage}%)
+                الخصم
               </span>
 
               <span>
-                - {discountAmount} ج.م
+                -{" "}
+                {
+                  discountAmount
+                }{" "}
+                ج.م
               </span>
             </div>
           )}
@@ -172,14 +448,17 @@ function CartStep({
               </span>
 
               <span className="font-bold text-secondary">
-                {totalAfterDiscount} ج.م
+                {
+                  totalAfterDiscount
+                }{" "}
+                ج.م
               </span>
             </div>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default CartStep
+export default CartStep;

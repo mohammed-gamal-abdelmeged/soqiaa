@@ -21,6 +21,36 @@ import {
 
 /*
 |--------------------------------------------------------------------------
+| Shared Selects
+|--------------------------------------------------------------------------
+*/
+
+const CATEGORY_SELECT = {
+  id: true,
+  name: true,
+  slug: true,
+
+  imageUrl: true,
+
+  bannerImageUrl: true,
+  bannerTitle: true,
+  bannerSubtitle: true,
+
+  sortOrder: true,
+  isActive: true,
+};
+
+const SUBCATEGORY_SELECT = {
+  id: true,
+  name: true,
+  slug: true,
+
+  sortOrder: true,
+  isActive: true,
+};
+
+/*
+|--------------------------------------------------------------------------
 | Serializers
 |--------------------------------------------------------------------------
 */
@@ -32,8 +62,10 @@ function serializeSubcategory(
     id: subcategory.id,
     name: subcategory.name,
     slug: subcategory.slug,
+
     sortOrder:
       subcategory.sortOrder,
+
     isActive:
       subcategory.isActive,
   };
@@ -141,37 +173,317 @@ async function ensureCategoryExists(
   return category;
 }
 
-async function ensureCategorySortOrderAvailable(
-  sortOrder,
-  excludeCategoryId = null
-) {
-  const existingCategory =
-    await prisma.category.findFirst({
-      where: {
-        sortOrder,
-        deletedAt: null,
+/*
+|--------------------------------------------------------------------------
+| Active Sort Order
+|--------------------------------------------------------------------------
+|
+| الـ sortOrder محجوز فقط للأقسام النشطة.
+|
+| لذلك:
+|
+| Active + Active بنفس الرقم      => Conflict
+| Inactive + Active بنفس الرقم    => Allowed
+| Inactive + Inactive بنفس الرقم  => Allowed
+|
+|--------------------------------------------------------------------------
+*/
 
-        ...(excludeCategoryId
-          ? {
-              id: {
-                not:
-                  excludeCategoryId,
-              },
-            }
-          : {}),
+async function findActiveCategoryBySortOrder(
+  sortOrder,
+  excludeCategoryId = null,
+  client = prisma
+) {
+  return client.category.findFirst({
+    where: {
+      sortOrder,
+
+      isActive: true,
+
+      deletedAt: null,
+
+      ...(excludeCategoryId
+        ? {
+            id: {
+              not:
+                excludeCategoryId,
+            },
+          }
+        : {}),
+    },
+
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      sortOrder: true,
+      isActive: true,
+    },
+  });
+}
+
+/*
+|--------------------------------------------------------------------------
+| Next Active Sort Order
+|--------------------------------------------------------------------------
+|
+| لو عندنا أقسام نشطة:
+|
+| 1 2 3 4 5 6 7 8
+|
+| القسم الذي سيتم إزاحته أثناء الاستبدال
+| ينتقل إلى:
+|
+| 9
+|
+|--------------------------------------------------------------------------
+*/
+
+async function getNextActiveCategorySortOrder(
+  client = prisma
+) {
+  const lastActiveCategory =
+    await client.category.findFirst({
+      where: {
+        deletedAt: null,
+        isActive: true,
       },
 
+      orderBy: [
+        {
+          sortOrder:
+            "desc",
+        },
+        {
+          id:
+            "desc",
+        },
+      ],
+
       select: {
-        id: true,
+        sortOrder: true,
       },
     });
 
-  if (existingCategory) {
-    throw new AppError(
-      `Sort order ${sortOrder} is already in use`,
-      409,
-      "CATEGORY_SORT_ORDER_CONFLICT"
+  return (
+    lastActiveCategory
+      ?.sortOrder ?? 0
+  ) + 1;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Sort Order Conflict
+|--------------------------------------------------------------------------
+|
+| نرجع للـ Admin:
+|
+| - الرقم المتعارض
+| - القسم الذي يستخدم الرقم
+| - الرقم الذي سينتقل إليه عند الاستبدال
+|
+|--------------------------------------------------------------------------
+*/
+
+async function throwCategorySortOrderConflict(
+  sortOrder,
+  conflictingCategory,
+  client = prisma
+) {
+  const replacementSortOrder =
+    await getNextActiveCategorySortOrder(
+      client
     );
+
+  throw new AppError(
+    `Sort order ${sortOrder} is already in use by category ${conflictingCategory.name}`,
+    409,
+    "CATEGORY_SORT_ORDER_CONFLICT",
+    {
+      sortOrder,
+
+      conflictingCategory: {
+        id:
+          conflictingCategory.id,
+
+        name:
+          conflictingCategory.name,
+
+        slug:
+          conflictingCategory.slug,
+
+        sortOrder:
+          conflictingCategory.sortOrder,
+      },
+
+      replacementSortOrder,
+    }
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
+| Active Subcategory Sort Order
+|--------------------------------------------------------------------------
+|
+| نفس قاعدة الأقسام الرئيسية، لكن داخل نفس الـCategory فقط.
+|
+| Active + Active بنفس الرقم      => Conflict
+| Inactive + Active بنفس الرقم    => Allowed
+| Inactive + Inactive بنفس الرقم  => Allowed
+|
+|--------------------------------------------------------------------------
+*/
+
+async function findActiveSubcategoryBySortOrder(
+  categoryId,
+  sortOrder,
+  excludeSubcategoryId = null,
+  client = prisma
+) {
+  return client.subcategory.findFirst({
+    where: {
+      categoryId,
+
+      sortOrder,
+
+      isActive: true,
+
+      deletedAt: null,
+
+      ...(excludeSubcategoryId
+        ? {
+            id: {
+              not:
+                excludeSubcategoryId,
+            },
+          }
+        : {}),
+    },
+
+    select:
+      SUBCATEGORY_SELECT,
+  });
+}
+
+async function getNextActiveSubcategorySortOrder(
+  categoryId,
+  client = prisma
+) {
+  const lastActiveSubcategory =
+    await client.subcategory.findFirst({
+      where: {
+        categoryId,
+        deletedAt: null,
+        isActive: true,
+      },
+
+      orderBy: [
+        {
+          sortOrder:
+            "desc",
+        },
+        {
+          id:
+            "desc",
+        },
+      ],
+
+      select: {
+        sortOrder: true,
+      },
+    });
+
+  return (
+    lastActiveSubcategory
+      ?.sortOrder ?? 0
+  ) + 1;
+}
+
+async function throwSubcategorySortOrderConflict(
+  categoryId,
+  sortOrder,
+  conflictingSubcategory,
+  client = prisma
+) {
+  const replacementSortOrder =
+    await getNextActiveSubcategorySortOrder(
+      categoryId,
+      client
+    );
+
+  throw new AppError(
+    `Sort order ${sortOrder} is already in use by subcategory ${conflictingSubcategory.name}`,
+    409,
+    "SUBCATEGORY_SORT_ORDER_CONFLICT",
+    {
+      sortOrder,
+
+      conflictingSubcategory: {
+        id:
+          conflictingSubcategory.id,
+
+        name:
+          conflictingSubcategory.name,
+
+        slug:
+          conflictingSubcategory.slug,
+
+        sortOrder:
+          conflictingSubcategory.sortOrder,
+      },
+
+      replacementSortOrder,
+    }
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
+| Serializable Transaction
+|--------------------------------------------------------------------------
+|
+| مهم في التبديل عشان العملية تكون Atomic:
+|
+| - القسم الجديد ياخد مكان القديم
+| - القديم يروح آخر القائمة
+|
+| يا الاتنين يحصلوا مع بعض
+| يا مفيش أي تغيير.
+|
+|--------------------------------------------------------------------------
+*/
+
+async function runSerializableTransaction(
+  work,
+  maxAttempts = 3
+) {
+  for (
+    let attempt = 1;
+    attempt <= maxAttempts;
+    attempt += 1
+  ) {
+    try {
+      return await prisma.$transaction(
+        work,
+        {
+          isolationLevel:
+            "Serializable",
+        }
+      );
+    } catch (error) {
+      const canRetry =
+        error?.code ===
+          "P2034" &&
+        attempt <
+          maxAttempts;
+
+      if (canRetry) {
+        continue;
+      }
+
+      throw error;
+    }
   }
 }
 
@@ -195,7 +507,9 @@ async function createCategorySlug(
           },
         });
 
-      return Boolean(category);
+      return Boolean(
+        category
+      );
     },
   });
 }
@@ -254,7 +568,9 @@ async function cleanupImages(
       publicPaths
         .filter(Boolean)
         .map(
-          (publicPath) =>
+          (
+            publicPath
+          ) =>
             deleteStoredImage(
               publicPath
             )
@@ -290,15 +606,24 @@ export async function getPublicCategories() {
         isActive: true,
       },
 
-      orderBy: {
-        sortOrder: "asc",
-      },
+      orderBy: [
+        {
+          sortOrder:
+            "asc",
+        },
+        {
+          id:
+            "asc",
+        },
+      ],
 
       select: {
         id: true,
         name: true,
         slug: true,
+
         imageUrl: true,
+
         sortOrder: true,
         isActive: true,
       },
@@ -341,15 +666,20 @@ export async function getPublicCategoryBySlug(
           },
 
           orderBy: {
-            sortOrder: "asc",
+            sortOrder:
+              "asc",
           },
 
           select: {
             id: true,
             name: true,
             slug: true,
-            sortOrder: true,
-            isActive: true,
+
+            sortOrder:
+              true,
+
+            isActive:
+              true,
           },
         },
       },
@@ -381,24 +711,33 @@ export async function getAdminCategories() {
         deletedAt: null,
       },
 
-      orderBy: {
-        sortOrder: "asc",
-      },
+      /*
+       * دلوقتي ممكن أكتر من Inactive Category
+       * يكون عنده نفس sortOrder.
+       *
+       * لذلك نعمل Sort ثابت وواضح.
+       */
+      orderBy: [
+        {
+          sortOrder:
+            "asc",
+        },
+        {
+          isActive:
+            "desc",
+        },
+        {
+          createdAt:
+            "asc",
+        },
+        {
+          id:
+            "asc",
+        },
+      ],
 
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-
-        imageUrl: true,
-
-        bannerImageUrl: true,
-        bannerTitle: true,
-        bannerSubtitle: true,
-
-        sortOrder: true,
-        isActive: true,
-      },
+      select:
+        CATEGORY_SELECT,
     });
 
   return categories.map(
@@ -417,35 +756,30 @@ export async function getAdminCategoryBySlug(
       },
 
       select: {
-        id: true,
-        name: true,
-        slug: true,
-
-        imageUrl: true,
-
-        bannerImageUrl: true,
-        bannerTitle: true,
-        bannerSubtitle: true,
-
-        sortOrder: true,
-        isActive: true,
+        ...CATEGORY_SELECT,
 
         subcategories: {
           where: {
             deletedAt: null,
           },
 
-          orderBy: {
-            sortOrder: "asc",
-          },
+          orderBy: [
+            {
+              sortOrder:
+                "asc",
+            },
+            {
+              isActive:
+                "desc",
+            },
+            {
+              id:
+                "asc",
+            },
+          ],
 
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            sortOrder: true,
-            isActive: true,
-          },
+          select:
+            SUBCATEGORY_SELECT,
         },
       },
     });
@@ -462,6 +796,12 @@ export async function getAdminCategoryBySlug(
     category
   );
 }
+
+/*
+|--------------------------------------------------------------------------
+| Create Category
+|--------------------------------------------------------------------------
+*/
 
 export async function createCategory(
   data,
@@ -489,9 +829,27 @@ export async function createCategory(
     );
   }
 
-  await ensureCategorySortOrderAvailable(
-    data.sortOrder
-  );
+  /*
+   * مهم:
+   *
+   * القسم غير النشط لا يحجز sortOrder.
+   *
+   * لذلك نتحقق من التعارض فقط
+   * لو القسم الجديد سيكون Active.
+   */
+  if (data.isActive) {
+    const conflict =
+      await findActiveCategoryBySortOrder(
+        data.sortOrder
+      );
+
+    if (conflict) {
+      await throwCategorySortOrderConflict(
+        data.sortOrder,
+        conflict
+      );
+    }
+  }
 
   const slug =
     await createCategorySlug(
@@ -509,9 +867,11 @@ export async function createCategory(
       Intentionally sequential.
 
       Image processing is CPU intensive.
-      Admin uploads are infrequent, so
-      avoiding two simultaneous Sharp jobs
-      helps protect storefront responsiveness.
+
+      Admin uploads are infrequent,
+      so avoiding two simultaneous
+      Sharp jobs helps protect
+      storefront responsiveness.
     */
 
     storedCategoryImage =
@@ -528,46 +888,67 @@ export async function createCategory(
         "categoryBanner"
       );
 
+    /*
+     * نعيد التحقق داخل Transaction
+     * لحماية العملية من Race Conditions.
+     */
     const category =
-      await prisma.category.create({
-        data: {
-          name: data.name,
-          slug,
+      await runSerializableTransaction(
+        async (
+          tx
+        ) => {
+          if (
+            data.isActive
+          ) {
+            const conflict =
+              await findActiveCategoryBySortOrder(
+                data.sortOrder,
+                null,
+                tx
+              );
 
-          imageUrl:
-            storedCategoryImage.publicPath,
+            if (
+              conflict
+            ) {
+              await throwCategorySortOrderConflict(
+                data.sortOrder,
+                conflict,
+                tx
+              );
+            }
+          }
 
-          bannerImageUrl:
-            storedBannerImage.publicPath,
+          return tx.category.create({
+            data: {
+              name:
+                data.name,
 
-          bannerTitle:
-            data.bannerTitle,
+              slug,
 
-          bannerSubtitle:
-            data.bannerSubtitle,
+              imageUrl:
+                storedCategoryImage.publicPath,
 
-          sortOrder:
-            data.sortOrder,
+              bannerImageUrl:
+                storedBannerImage.publicPath,
 
-          isActive:
-            data.isActive,
-        },
+              bannerTitle:
+                data.bannerTitle,
 
-        select: {
-          id: true,
-          name: true,
-          slug: true,
+              bannerSubtitle:
+                data.bannerSubtitle,
 
-          imageUrl: true,
+              sortOrder:
+                data.sortOrder,
 
-          bannerImageUrl: true,
-          bannerTitle: true,
-          bannerSubtitle: true,
+              isActive:
+                data.isActive,
+            },
 
-          sortOrder: true,
-          isActive: true,
-        },
-      });
+            select:
+              CATEGORY_SELECT,
+          });
+        }
+      );
 
     return serializeCategory(
       category
@@ -596,6 +977,12 @@ export async function createCategory(
   }
 }
 
+/*
+|--------------------------------------------------------------------------
+| Update Category
+|--------------------------------------------------------------------------
+*/
+
 export async function updateCategory(
   categoryId,
   data,
@@ -604,14 +991,29 @@ export async function updateCategory(
   const existingCategory =
     await prisma.category.findFirst({
       where: {
-        id: categoryId,
-        deletedAt: null,
+        id:
+          categoryId,
+
+        deletedAt:
+          null,
       },
 
       select: {
         id: true,
-        imageUrl: true,
-        bannerImageUrl: true,
+        name: true,
+        slug: true,
+
+        imageUrl:
+          true,
+
+        bannerImageUrl:
+          true,
+
+        sortOrder:
+          true,
+
+        isActive:
+          true,
       },
     });
 
@@ -629,9 +1031,28 @@ export async function updateCategory(
   const bannerImage =
     files?.bannerImage?.[0];
 
+  /*
+   * دي Command Flag.
+   *
+   * مش Field داخل جدول Category.
+   *
+   * لما الأدمن يوافق على:
+   *
+   * "تفعيل القسم بدل القسم الموجود"
+   *
+   * الـFrontend هيبعتها true.
+   */
+  const {
+    replaceSortOrderConflict =
+      false,
+
+    ...categoryChanges
+  } = data;
+
   const hasBodyChanges =
-    Object.keys(data).length >
-    0;
+    Object.keys(
+      categoryChanges
+    ).length > 0;
 
   if (
     !hasBodyChanges &&
@@ -645,14 +1066,34 @@ export async function updateCategory(
     );
   }
 
+  const targetSortOrder =
+    categoryChanges
+      .sortOrder ??
+    existingCategory
+      .sortOrder;
+
+  const targetIsActive =
+    categoryChanges
+      .isActive ??
+    existingCategory
+      .isActive;
+
   if (
-    data.sortOrder !==
-    undefined
+    targetIsActive &&
+    !replaceSortOrderConflict
   ) {
-    await ensureCategorySortOrderAvailable(
-      data.sortOrder,
-      categoryId
-    );
+    const conflict =
+      await findActiveCategoryBySortOrder(
+        targetSortOrder,
+        categoryId
+      );
+
+    if (conflict) {
+      await throwCategorySortOrderConflict(
+        targetSortOrder,
+        conflict
+      );
+    }
   }
 
   let newCategoryImage =
@@ -681,68 +1122,171 @@ export async function updateCategory(
     }
 
     const updateData = {
-      ...data,
+      ...categoryChanges,
     };
 
-    if (newCategoryImage) {
+    if (
+      newCategoryImage
+    ) {
       updateData.imageUrl =
-        newCategoryImage.publicPath;
+        newCategoryImage
+          .publicPath;
     }
 
-    if (newBannerImage) {
+    if (
+      newBannerImage
+    ) {
       updateData.bannerImageUrl =
-        newBannerImage.publicPath;
+        newBannerImage
+          .publicPath;
     }
 
     /*
       Slug intentionally does NOT change
       when the category name is edited.
 
-      This matches the current Admin repo
-      and prevents breaking existing URLs.
+      This prevents breaking existing URLs.
     */
 
-    const category =
-      await prisma.category.update({
-        where: {
-          id: categoryId,
-        },
+    const result =
+      await runSerializableTransaction(
+        async (
+          tx
+        ) => {
+          const currentCategory =
+            await tx.category.findFirst({
+              where: {
+                id:
+                  categoryId,
 
-        data: updateData,
+                deletedAt:
+                  null,
+              },
 
-        select: {
-          id: true,
-          name: true,
-          slug: true,
+              select: {
+                id: true,
 
-          imageUrl: true,
+                sortOrder:
+                  true,
 
-          bannerImageUrl: true,
-          bannerTitle: true,
-          bannerSubtitle: true,
+                isActive:
+                  true,
+              },
+            });
 
-          sortOrder: true,
-          isActive: true,
-        },
-      });
+          if (
+            !currentCategory
+          ) {
+            throw new AppError(
+              "Category not found",
+              404,
+              "CATEGORY_NOT_FOUND"
+            );
+          }
+
+          const effectiveSortOrder =
+            updateData
+              .sortOrder ??
+            currentCategory
+              .sortOrder;
+
+          const effectiveIsActive =
+            updateData
+              .isActive ??
+            currentCategory
+              .isActive;
+
+          let movedCategory =
+            null;
+
+          if (
+            effectiveIsActive
+          ) {
+            const conflict =
+              await findActiveCategoryBySortOrder(
+                effectiveSortOrder,
+                categoryId,
+                tx
+              );
+
+            if (
+              conflict
+            ) {
+              if (
+                !replaceSortOrderConflict
+              ) {
+                await throwCategorySortOrderConflict(
+                  effectiveSortOrder,
+                  conflict,
+                  tx
+                );
+              }
+
+              const nextSortOrder =
+                await getNextActiveCategorySortOrder(
+                  tx
+                );
+
+              movedCategory =
+                await tx.category.update({
+                  where: {
+                    id:
+                      conflict.id,
+                  },
+
+                  data: {
+                    sortOrder:
+                      nextSortOrder,
+                  },
+
+                  select:
+                    CATEGORY_SELECT,
+                });
+            }
+          }
+
+          const category =
+            await tx.category.update({
+              where: {
+                id:
+                  categoryId,
+              },
+
+              data:
+                updateData,
+
+              select:
+                CATEGORY_SELECT,
+            });
+
+          return {
+            category,
+            movedCategory,
+          };
+        }
+      );
 
     const oldImages = [];
 
     if (
       newCategoryImage &&
-      existingCategory.imageUrl
+      existingCategory
+        .imageUrl
     ) {
       oldImages.push(
-        existingCategory.imageUrl
+        existingCategory
+          .imageUrl
       );
     }
 
     if (
       newBannerImage &&
-      existingCategory.bannerImageUrl
+      existingCategory
+        .bannerImageUrl
     ) {
       oldImages.push(
-        existingCategory.bannerImageUrl
+        existingCategory
+          .bannerImageUrl
       );
     }
 
@@ -750,9 +1294,24 @@ export async function updateCategory(
       oldImages
     );
 
-    return serializeCategory(
-      category
-    );
+    const serializedCategory =
+      serializeCategory(
+        result.category
+      );
+
+    if (
+      result.movedCategory
+    ) {
+      serializedCategory
+        .replacement = {
+        movedCategory:
+          serializeCategory(
+            result.movedCategory
+          ),
+      };
+    }
+
+    return serializedCategory;
   } catch (error) {
     await cleanupImages([
       newCategoryImage
@@ -777,6 +1336,17 @@ export async function updateCategory(
   }
 }
 
+/*
+|--------------------------------------------------------------------------
+| Delete Category
+|--------------------------------------------------------------------------
+|
+| مازلنا محتفظين بالـAPI كـsoft delete،
+| حتى لو Admin UI مش هيستخدم زر الحذف حاليًا.
+|
+|--------------------------------------------------------------------------
+*/
+
 export async function deleteCategory(
   categoryId
 ) {
@@ -786,26 +1356,22 @@ export async function deleteCategory(
 
   await prisma.category.update({
     where: {
-      id: categoryId,
+      id:
+        categoryId,
     },
 
     data: {
-      isActive: false,
+      isActive:
+        false,
+
       deletedAt:
         new Date(),
     },
   });
 
-  /*
-    Do not delete image files here.
-
-    This is a soft delete, so keeping
-    the images preserves the possibility
-    of restore/audit later.
-  */
-
   return {
-    id: categoryId,
+    id:
+      categoryId,
   };
 }
 
@@ -823,34 +1389,23 @@ export async function createSubcategory(
     categoryId
   );
 
-  const MAX_ATTEMPTS = 5;
+  const MAX_ATTEMPTS =
+    5;
 
   for (
     let attempt = 1;
     attempt <= MAX_ATTEMPTS;
     attempt += 1
   ) {
-    const lastSubcategory =
-      await prisma.subcategory.findFirst({
-        where: {
-          categoryId,
-          deletedAt: null,
-        },
-
-        orderBy: {
-          sortOrder: "desc",
-        },
-
-        select: {
-          sortOrder: true,
-        },
-      });
-
+    /*
+     * الـInactive لا يحجز sortOrder.
+     * لذلك القسم الفرعي الجديد يأخذ:
+     * highest active sortOrder + 1
+     */
     const sortOrder =
-      (
-        lastSubcategory
-          ?.sortOrder ?? 0
-      ) + 1;
+      await getNextActiveSubcategorySortOrder(
+        categoryId
+      );
 
     const slug =
       await createSubcategorySlug(
@@ -871,16 +1426,12 @@ export async function createSubcategory(
 
             sortOrder,
 
-            isActive: true,
+            isActive:
+              true,
           },
 
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            sortOrder: true,
-            isActive: true,
-          },
+          select:
+            SUBCATEGORY_SELECT,
         });
 
       return serializeSubcategory(
@@ -921,16 +1472,24 @@ export async function updateSubcategory(
   const existingSubcategory =
     await prisma.subcategory.findFirst({
       where: {
-        id: subcategoryId,
-        deletedAt: null,
+        id:
+          subcategoryId,
+
+        deletedAt:
+          null,
       },
 
       select: {
         id: true,
+        categoryId: true,
+        sortOrder: true,
+        isActive: true,
       },
     });
 
-  if (!existingSubcategory) {
+  if (
+    !existingSubcategory
+  ) {
     throw new AppError(
       "Subcategory not found",
       404,
@@ -938,32 +1497,216 @@ export async function updateSubcategory(
     );
   }
 
-  const subcategory =
-    await prisma.subcategory.update({
-      where: {
-        id: subcategoryId,
-      },
+  /*
+   * Command flag فقط.
+   * لا يتم حفظها في جدول Subcategory.
+   */
+  const {
+    replaceSortOrderConflict =
+      false,
 
-      data,
+    ...subcategoryChanges
+  } = data;
 
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        sortOrder: true,
-        isActive: true,
-      },
-    });
+  const hasChanges =
+    Object.keys(
+      subcategoryChanges
+    ).length > 0;
+
+  if (!hasChanges) {
+    throw new AppError(
+      "At least one subcategory field must be provided",
+      400,
+      "NO_SUBCATEGORY_CHANGES"
+    );
+  }
+
+  const targetSortOrder =
+    subcategoryChanges
+      .sortOrder ??
+    existingSubcategory
+      .sortOrder;
+
+  const targetIsActive =
+    subcategoryChanges
+      .isActive ??
+    existingSubcategory
+      .isActive;
 
   /*
-    Same rule as Category:
-    editing the name does not change slug.
-  */
+   * Fast pre-check قبل الـTransaction.
+   * لو التفعيل سيصطدم بقسم فرعي نشط آخر،
+   * نرجع 409 ومعاه بيانات الـConfirmation Modal.
+   */
+  if (
+    targetIsActive &&
+    !replaceSortOrderConflict
+  ) {
+    const conflict =
+      await findActiveSubcategoryBySortOrder(
+        existingSubcategory.categoryId,
+        targetSortOrder,
+        subcategoryId
+      );
 
-  return serializeSubcategory(
-    subcategory
-  );
+    if (conflict) {
+      await throwSubcategorySortOrderConflict(
+        existingSubcategory.categoryId,
+        targetSortOrder,
+        conflict
+      );
+    }
+  }
+
+  const result =
+    await runSerializableTransaction(
+      async (
+        tx
+      ) => {
+        const currentSubcategory =
+          await tx.subcategory.findFirst({
+            where: {
+              id:
+                subcategoryId,
+
+              deletedAt:
+                null,
+            },
+
+            select: {
+              id: true,
+              categoryId: true,
+              sortOrder: true,
+              isActive: true,
+            },
+          });
+
+        if (
+          !currentSubcategory
+        ) {
+          throw new AppError(
+            "Subcategory not found",
+            404,
+            "SUBCATEGORY_NOT_FOUND"
+          );
+        }
+
+        const effectiveSortOrder =
+          subcategoryChanges
+            .sortOrder ??
+          currentSubcategory
+            .sortOrder;
+
+        const effectiveIsActive =
+          subcategoryChanges
+            .isActive ??
+          currentSubcategory
+            .isActive;
+
+        let movedSubcategory =
+          null;
+
+        if (effectiveIsActive) {
+          const conflict =
+            await findActiveSubcategoryBySortOrder(
+              currentSubcategory.categoryId,
+              effectiveSortOrder,
+              subcategoryId,
+              tx
+            );
+
+          if (conflict) {
+            if (
+              !replaceSortOrderConflict
+            ) {
+              await throwSubcategorySortOrderConflict(
+                currentSubcategory.categoryId,
+                effectiveSortOrder,
+                conflict,
+                tx
+              );
+            }
+
+            const nextSortOrder =
+              await getNextActiveSubcategorySortOrder(
+                currentSubcategory.categoryId,
+                tx
+              );
+
+            movedSubcategory =
+              await tx.subcategory.update({
+                where: {
+                  id:
+                    conflict.id,
+                },
+
+                data: {
+                  sortOrder:
+                    nextSortOrder,
+                },
+
+                select:
+                  SUBCATEGORY_SELECT,
+              });
+          }
+        }
+
+        const subcategory =
+          await tx.subcategory.update({
+            where: {
+              id:
+                subcategoryId,
+            },
+
+            data:
+              subcategoryChanges,
+
+            select:
+              SUBCATEGORY_SELECT,
+          });
+
+        return {
+          subcategory,
+          movedSubcategory,
+        };
+      }
+    );
+
+  /*
+   * Same rule as Category:
+   * editing the name does not change slug.
+   */
+  const serializedSubcategory =
+    serializeSubcategory(
+      result.subcategory
+    );
+
+  if (
+    result.movedSubcategory
+  ) {
+    serializedSubcategory
+      .replacement = {
+      movedSubcategory:
+        serializeSubcategory(
+          result.movedSubcategory
+        ),
+    };
+  }
+
+  return serializedSubcategory;
 }
+
+/*
+|--------------------------------------------------------------------------
+| Delete Subcategory
+|--------------------------------------------------------------------------
+|
+| نحتفظ بالـAPI كـsoft delete.
+| واجهة الإدارة الرئيسية للـSubcategories
+| ستستخدم Active / Inactive بدل زر الحذف.
+|
+|--------------------------------------------------------------------------
+*/
 
 export async function deleteSubcategory(
   subcategoryId
@@ -971,12 +1714,16 @@ export async function deleteSubcategory(
   const subcategory =
     await prisma.subcategory.findFirst({
       where: {
-        id: subcategoryId,
-        deletedAt: null,
+        id:
+          subcategoryId,
+
+        deletedAt:
+          null,
       },
 
       select: {
-        id: true,
+        id:
+          true,
       },
     });
 
@@ -990,17 +1737,21 @@ export async function deleteSubcategory(
 
   await prisma.subcategory.update({
     where: {
-      id: subcategoryId,
+      id:
+        subcategoryId,
     },
 
     data: {
-      isActive: false,
+      isActive:
+        false,
+
       deletedAt:
         new Date(),
     },
   });
 
   return {
-    id: subcategoryId,
+    id:
+      subcategoryId,
   };
 }

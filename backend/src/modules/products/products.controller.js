@@ -1,5 +1,6 @@
 import {
   createProduct,
+  deleteProduct,
   getAdminProductById,
   getAdminProducts,
   getPublicProductById,
@@ -148,6 +149,36 @@ export async function updateProductController(
 
     message:
       "Product updated successfully",
+
+    data: {
+      product,
+    },
+  });
+}
+
+/*
+|--------------------------------------------------------------------------
+| Delete Product
+|--------------------------------------------------------------------------
+*/
+
+export async function deleteProductController(
+  req,
+  res
+) {
+  const { id } =
+    req.validated.params;
+
+  const product =
+    await deleteProduct(
+      id
+    );
+
+  res.status(200).json({
+    success: true,
+
+    message:
+      "Product deleted successfully",
 
     data: {
       product,

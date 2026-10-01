@@ -3,19 +3,76 @@ import {
   TrendingUp,
 } from "lucide-react";
 
-import { useNavigate } from "react-router-dom";
+import {
+  useNavigate,
+} from "react-router-dom";
 
-import { productsMock } from "../../products/data/products.mock";
+import {
+  useProducts,
+} from "../../products/hooks/useProducts";
+
 import HomeProductCard from "../../home/components/HomeProductCard";
 
 function BestSellersPage() {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-  const products = productsMock.filter(
-    (product) =>
-      product.isActive &&
-      product.isBestSeller,
-  );
+  const {
+    data: allProducts = [],
+    isPending,
+    isError,
+    error,
+  } = useProducts();
+
+  const products =
+    allProducts.filter(
+      (product) =>
+        product.isBestSeller,
+    );
+
+  if (isPending) {
+    return (
+      <div
+        className="
+          flex min-h-screen
+          items-center justify-center
+          bg-[#f7f9f6]
+        "
+      >
+        <span
+          className="
+            h-8 w-8 animate-spin
+            rounded-full border-2
+            border-gray-200
+            border-t-secondary
+          "
+        />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div
+        className="
+          flex min-h-screen
+          items-center justify-center
+          bg-[#f7f9f6] px-5
+        "
+      >
+        <div className="text-center">
+          <p className="font-semibold text-primary">
+            تعذر تحميل المنتجات
+          </p>
+
+          <p className="mt-2 text-sm text-gray-500">
+            {error?.message ||
+              "حاول مرة أخرى"}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f7f9f6]">
@@ -28,9 +85,13 @@ function BestSellersPage() {
       >
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={() =>
+            navigate(-1)
+          }
         >
-          <ArrowRight size={25} />
+          <ArrowRight
+            size={25}
+          />
         </button>
 
         <h1 className="flex-1 text-center text-xl font-bold text-primary">
@@ -42,7 +103,8 @@ function BestSellersPage() {
 
       <main
         className="
-          mx-auto w-full max-w-[1180px]
+          mx-auto w-full
+          max-w-[1180px]
           px-5 py-6
         "
       >
@@ -55,12 +117,15 @@ function BestSellersPage() {
         >
           <div
             className="
-              flex h-12 w-12 items-center
-              justify-center rounded-2xl
+              flex h-12 w-12
+              items-center justify-center
+              rounded-2xl
               bg-white text-secondary
             "
           >
-            <TrendingUp size={25} />
+            <TrendingUp
+              size={25}
+            />
           </div>
 
           <div>
@@ -78,15 +143,18 @@ function BestSellersPage() {
           <section
             className="
               grid grid-cols-2 gap-4
-              md:grid-cols-3 lg:grid-cols-4
+              md:grid-cols-3
+              lg:grid-cols-4
             "
           >
-            {products.map((product) => (
-              <HomeProductCard
-                key={product.id}
-                product={product}
-              />
-            ))}
+            {products.map(
+              (product) => (
+                <HomeProductCard
+                  key={product.id}
+                  product={product}
+                />
+              ),
+            )}
           </section>
         ) : (
           <div className="py-20 text-center text-gray-500">

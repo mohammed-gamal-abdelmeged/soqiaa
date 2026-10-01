@@ -2,6 +2,7 @@ import {
   Pencil,
   Plus,
   Trash2,
+  Power,
 } from "lucide-react";
 
 export default function SubcategoriesPanel({
@@ -9,6 +10,7 @@ export default function SubcategoriesPanel({
   onAdd,
   onEdit,
   onDelete,
+  onToggleActive,
 }) {
   return (
     <div>
@@ -37,11 +39,15 @@ export default function SubcategoriesPanel({
         <>
           {/* Desktop */}
           <div className="hidden md:block">
-            <div className="grid grid-cols-[1fr_130px_180px] border-b border-slate-200 bg-slate-50 px-5 py-3 text-xs font-semibold text-slate-500">
-              <span>اسم القسم الفرعي</span>
+            <div className="grid grid-cols-[1fr_130px_260px] border-b border-slate-200 bg-slate-50 px-5 py-3 text-xs font-semibold text-slate-500">
+              <span>
+                اسم القسم الفرعي
+              </span>
+
               <span className="text-center">
                 الترتيب
               </span>
+
               <span className="text-center">
                 الإجراءات
               </span>
@@ -52,12 +58,27 @@ export default function SubcategoriesPanel({
                 (subcategory, index) => (
                   <div
                     key={subcategory.id}
-                    className="grid grid-cols-[1fr_130px_180px] items-center px-5 py-4 transition hover:bg-slate-50/70"
+                    className="grid grid-cols-[1fr_130px_260px] items-center px-5 py-4 transition hover:bg-slate-50/70"
                   >
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">
-                        {subcategory.name}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-slate-900">
+                          {subcategory.name}
+                        </p>
+
+                        <span
+                          className={[
+                            "rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                            subcategory.isActive
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-slate-100 text-slate-500",
+                          ].join(" ")}
+                        >
+                          {subcategory.isActive
+                            ? "نشط"
+                            : "غير نشط"}
+                        </span>
+                      </div>
 
                       <p className="mt-1 text-xs text-slate-400">
                         رقم القسم:{" "}
@@ -70,6 +91,33 @@ export default function SubcategoriesPanel({
                     </span>
 
                     <div className="flex items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onToggleActive(
+                            subcategory,
+                          )
+                        }
+                        className={[
+                          "flex h-9 w-9 items-center justify-center rounded-lg border transition",
+                          subcategory.isActive
+                            ? "border-orange-200 text-orange-600 hover:bg-orange-50"
+                            : "border-emerald-200 text-emerald-600 hover:bg-emerald-50",
+                        ].join(" ")}
+                        aria-label={
+                          subcategory.isActive
+                            ? `تعطيل ${subcategory.name}`
+                            : `تفعيل ${subcategory.name}`
+                        }
+                        title={
+                          subcategory.isActive
+                            ? "تعطيل"
+                            : "تفعيل"
+                        }
+                      >
+                        <Power size={16} />
+                      </button>
+
                       <button
                         type="button"
                         onClick={() =>
@@ -110,9 +158,24 @@ export default function SubcategoriesPanel({
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <h4 className="truncate text-sm font-bold text-slate-900">
-                        {subcategory.name}
-                      </h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="truncate text-sm font-bold text-slate-900">
+                          {subcategory.name}
+                        </h4>
+
+                        <span
+                          className={[
+                            "rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                            subcategory.isActive
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-slate-100 text-slate-500",
+                          ].join(" ")}
+                        >
+                          {subcategory.isActive
+                            ? "نشط"
+                            : "غير نشط"}
+                        </span>
+                      </div>
 
                       <p className="mt-1 text-xs text-slate-400">
                         رقم القسم:{" "}
@@ -124,6 +187,28 @@ export default function SubcategoriesPanel({
                     </div>
 
                     <div className="flex shrink-0 items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onToggleActive(
+                            subcategory,
+                          )
+                        }
+                        className={[
+                          "flex h-9 w-9 items-center justify-center rounded-lg border bg-white transition",
+                          subcategory.isActive
+                            ? "border-orange-200 text-orange-600 active:bg-orange-50"
+                            : "border-emerald-200 text-emerald-600 active:bg-emerald-50",
+                        ].join(" ")}
+                        aria-label={
+                          subcategory.isActive
+                            ? `تعطيل ${subcategory.name}`
+                            : `تفعيل ${subcategory.name}`
+                        }
+                      >
+                        <Power size={16} />
+                      </button>
+
                       <button
                         type="button"
                         onClick={() =>

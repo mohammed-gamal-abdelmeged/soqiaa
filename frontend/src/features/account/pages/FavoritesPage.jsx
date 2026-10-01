@@ -1,22 +1,73 @@
 import {
   ArrowRight,
   Heart,
-} from 'lucide-react'
+} from "lucide-react";
 
 import {
   Link,
   useNavigate,
-} from 'react-router-dom'
+} from "react-router-dom";
 
-import { useFavorites } from '../../favorites/context/useFavorites'
+import {
+  useFavorites,
+} from "../../favorites/context/useFavorites";
 
 function FavoritesPage() {
-  const navigate = useNavigate()
+  const navigate =
+    useNavigate();
 
   const {
     favorites,
     toggleFavorite,
-  } = useFavorites()
+    isFavoritesLoading,
+    isFavoritesError,
+    favoritesError,
+    isFavoritesUpdating,
+  } = useFavorites();
+
+  if (isFavoritesLoading) {
+    return (
+      <div
+        className="
+          flex min-h-screen
+          items-center justify-center
+          bg-[#f8f9fa]
+        "
+      >
+        <span
+          className="
+            h-8 w-8 animate-spin
+            rounded-full border-2
+            border-gray-200
+            border-t-secondary
+          "
+        />
+      </div>
+    );
+  }
+
+  if (isFavoritesError) {
+    return (
+      <div
+        className="
+          flex min-h-screen
+          items-center justify-center
+          bg-[#f8f9fa] px-5
+        "
+      >
+        <div className="text-center">
+          <p className="font-semibold text-primary">
+            تعذر تحميل المفضلة
+          </p>
+
+          <p className="mt-2 text-sm text-gray-500">
+            {favoritesError?.message ||
+              "حاول مرة أخرى"}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f8f9fa]">
@@ -30,10 +81,14 @@ function FavoritesPage() {
       >
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={() =>
+            navigate(-1)
+          }
           aria-label="رجوع"
         >
-          <ArrowRight size={25} />
+          <ArrowRight
+            size={25}
+          />
         </button>
 
         <h1 className="flex-1 text-center text-xl font-bold text-primary">
@@ -57,69 +112,91 @@ function FavoritesPage() {
             </div>
 
             <section className="grid grid-cols-2 gap-4">
-              {favorites.map((product) => (
-                <article
-                  key={product.id}
-                  className="
-                    relative overflow-hidden
-                    rounded-3xl bg-white p-3
-                    shadow-[0_4px_20px_rgba(0,27,61,0.05)]
-                  "
-                >
-                  <button
-                    type="button"
-                    onClick={() =>
-                      toggleFavorite(product)
-                    }
-                    aria-label="إزالة من المفضلة"
+              {favorites.map(
+                (product) => (
+                  <article
+                    key={product.id}
                     className="
-                      absolute left-3 top-3 z-10
-                      flex h-9 w-9
-                      items-center justify-center
-                      rounded-full bg-white
-                      text-red-500 shadow-sm
+                      relative overflow-hidden
+                      rounded-3xl bg-white p-3
+                      shadow-[0_4px_20px_rgba(0,27,61,0.05)]
                     "
                   >
-                    <Heart
-                      size={18}
-                      fill="currentColor"
-                    />
-                  </button>
-
-                  <Link
-                    to={`/products/${product.id}`}
-                  >
-                    <div
+                    <button
+                      type="button"
+                      onClick={() =>
+                        toggleFavorite(
+                          product,
+                        )
+                      }
+                      disabled={
+                        isFavoritesUpdating
+                      }
+                      aria-label="إزالة من المفضلة"
                       className="
-                        flex aspect-square
+                        absolute left-3 top-3
+                        z-10 flex h-9 w-9
                         items-center justify-center
-                        rounded-2xl bg-gray-50
+                        rounded-full bg-white
+                        text-red-500 shadow-sm
+                        transition
+                        active:scale-90
+                        disabled:cursor-not-allowed
+                        disabled:opacity-50
                       "
                     >
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="
-                          h-4/5 w-4/5
-                          object-contain
-                        "
+                      <Heart
+                        size={18}
+                        fill="currentColor"
                       />
-                    </div>
+                    </button>
 
-                    <h3 className="mt-3 line-clamp-2 text-sm font-semibold text-primary">
-                      {product.name}
-                    </h3>
+                    <Link
+                      to={`/products/${product.id}`}
+                    >
+                      <div
+                        className="
+                          flex aspect-square
+                          items-center justify-center
+                          rounded-2xl bg-gray-50
+                        "
+                      >
+                        <img
+                          src={
+                            product.image
+                          }
+                          alt={
+                            product.name
+                          }
+                          className="
+                            h-4/5 w-4/5
+                            object-contain
+                          "
+                        />
+                      </div>
 
-                    <p className="mt-1 text-xs text-gray-500">
-                      {product.unit}
-                    </p>
+                      <h3 className="mt-3 line-clamp-2 text-sm font-semibold text-primary">
+                        {
+                          product.name
+                        }
+                      </h3>
 
-                    <p className="mt-3 text-lg font-bold text-secondary">
-                      {product.price} ج.م
-                    </p>
-                  </Link>
-                </article>
-              ))}
+                      <p className="mt-1 text-xs text-gray-500">
+                        {
+                          product.unit
+                        }
+                      </p>
+
+                      <p className="mt-3 text-lg font-bold text-secondary">
+                        {
+                          product.price
+                        }{" "}
+                        ج.م
+                      </p>
+                    </Link>
+                  </article>
+                ),
+              )}
             </section>
           </>
         ) : (
@@ -132,7 +209,9 @@ function FavoritesPage() {
                 text-red-400
               "
             >
-              <Heart size={35} />
+              <Heart
+                size={35}
+              />
             </div>
 
             <h2 className="mt-5 text-xl font-bold text-primary">
@@ -145,11 +224,15 @@ function FavoritesPage() {
 
             <button
               type="button"
-              onClick={() => navigate('/categories')}
+              onClick={() =>
+                navigate(
+                  "/categories",
+                )
+              }
               className="
-                mt-6 rounded-xl bg-secondary
-                px-6 py-3 font-semibold
-                text-white
+                mt-6 rounded-xl
+                bg-secondary px-6 py-3
+                font-semibold text-white
               "
             >
               تصفح المنتجات
@@ -158,7 +241,7 @@ function FavoritesPage() {
         )}
       </main>
     </div>
-  )
+  );
 }
 
-export default FavoritesPage
+export default FavoritesPage;

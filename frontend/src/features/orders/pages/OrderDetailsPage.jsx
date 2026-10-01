@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import {
   ArrowRight,
   Check,
@@ -8,118 +7,166 @@ import {
   MapPin,
   Package,
   Truck,
-} from 'lucide-react'
+  XCircle,
+} from "lucide-react";
 
 import {
   useNavigate,
   useParams,
-} from 'react-router-dom'
+} from "react-router-dom";
 
-import { ordersMock } from '../data/orders.mock'
+import {
+  useOrder,
+} from "../hooks/useOrders";
 
 const ORDER_STEPS = [
   {
-    key: 'received',
-    label: 'تم استلام الطلب',
-    description: 'تم استلام طلبك بنجاح',
+    key: "received",
+    label: "تم استلام الطلب",
+    description: "تم استلام طلبك بنجاح",
     icon: Clock3,
   },
   {
-    key: 'preparing',
-    label: 'جاري تجهيز الطلب',
-    description: 'يتم الآن تحضير منتجاتك بعناية',
+    key: "confirmed",
+    label: "تم تأكيد الطلب",
+    description: "تم تأكيد طلبك",
+    icon: CheckCircle2,
+  },
+  {
+    key: "preparing",
+    label: "جاري تجهيز الطلب",
+    description: "يتم الآن تحضير منتجاتك بعناية",
     icon: Package,
   },
   {
-    key: 'out_for_delivery',
-    label: 'خرج للتوصيل',
-    description: 'طلبك في الطريق إليك',
+    key: "out_for_delivery",
+    label: "خرج للتوصيل",
+    description: "طلبك في الطريق إليك",
     icon: Truck,
   },
   {
-    key: 'delivered',
-    label: 'تم التوصيل',
-    description: 'تم توصيل الطلب بنجاح',
+    key: "delivered",
+    label: "تم التوصيل",
+    description: "تم توصيل الطلب بنجاح",
     icon: Home,
   },
-]
+];
 
 const STATUS_LABELS = {
-  received: 'تم استلام الطلب',
-  preparing: 'جاري التجهيز',
-  out_for_delivery: 'خرج للتوصيل',
-  delivered: 'تم التوصيل',
-}
+  received: "تم استلام الطلب",
+  confirmed: "تم تأكيد الطلب",
+  preparing: "جاري التجهيز",
+  out_for_delivery: "خرج للتوصيل",
+  delivered: "تم التوصيل",
+  cancelled: "تم إلغاء الطلب",
+};
 
 function OrderDetailsPage() {
-  const { id } = useParams()
-  const navigate = useNavigate()
+  const { id } = useParams();
 
-  const order = useMemo(() => {
-    return ordersMock.find(
-      (item) => String(item.id) === String(id),
-    )
-  }, [id])
+  const navigate =
+    useNavigate();
 
-  if (!order) {
+  const {
+    data: order,
+    isPending,
+    isError,
+    error,
+  } = useOrder(id);
+
+  if (isPending) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-5">
-        <p className="text-text-muted">
-          الطلب غير موجود
-        </p>
+      <div
+        className="
+          flex min-h-screen
+          items-center justify-center
+          bg-[#f8f9fa]
+        "
+      >
+        <span
+          className="
+            h-8 w-8 animate-spin
+            rounded-full border-2
+            border-gray-200
+            border-t-secondary
+          "
+        />
       </div>
-    )
+    );
   }
+
+  if (
+    isError ||
+    !order
+  ) {
+    return (
+      <div
+        className="
+          flex min-h-screen
+          items-center justify-center
+          bg-[#f8f9fa] px-5
+        "
+      >
+        <div className="text-center">
+          <p className="font-semibold text-primary">
+            الطلب غير موجود
+          </p>
+
+          {isError && (
+            <p className="mt-2 text-sm text-text-muted">
+              {error?.message ||
+                "تعذر تحميل الطلب"}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const isCancelled =
+    order.status ===
+    "cancelled";
+
+  const currentStepIndex =
+    ORDER_STEPS.findIndex(
+      (step) =>
+        step.key ===
+        order.status,
+    );
+
+  const formatDate = (
+    date,
+  ) => {
+    return new Intl.DateTimeFormat(
+      "ar-EG",
+      {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      },
+    ).format(
+      new Date(date),
+    );
+  };
 
   /*
-    حماية إضافية:
-    الطلب اللي تم توصيله المفروض أصلًا
-    المستخدم ميدخلش تفاصيله من OrderCard.
+   * These values are authoritative.
+   * Backend already calculates them
+   * during checkout.
+   */
+  const subtotal =
+    order.subtotal;
 
-    ولو دخل الرابط يدويًا، نرجعه لطلباتي.
-  */
-  if (order.status === 'delivered') {
-    navigate('/orders', { replace: true })
+  const deliveryFee =
+    order.deliveryFee;
 
-    return null
-  }
+  const discountAmount =
+    order.discountAmount;
 
-  const currentStepIndex = ORDER_STEPS.findIndex(
-    (step) => step.key === order.status,
-  )
-
-  const formatDate = (date) => {
-    return new Intl.DateTimeFormat('ar-EG', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    }).format(new Date(date))
-  }
-
-const subtotal =
-  order.subtotal ??
-  order.items.reduce((total, item) => {
-    const itemPrice = item.discountPercentage
-      ? Math.round(
-          item.price -
-            item.price *
-              (item.discountPercentage / 100),
-        )
-      : item.price
-
-    return total + itemPrice * item.quantity
-  }, 0)
-
-const deliveryFee =
-  order.deliveryFee ?? 15
-
-const discountAmount =
-  order.discountAmount ?? 0
-
-const total =
-  subtotal - discountAmount + deliveryFee
+  const total =
+    order.total;
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] pb-8">
@@ -134,14 +181,19 @@ const total =
       >
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={() =>
+            navigate(-1)
+          }
           aria-label="رجوع"
           className="
-            flex h-10 w-10 items-center justify-center
+            flex h-10 w-10
+            items-center justify-center
             transition active:scale-90
           "
         >
-          <ArrowRight size={25} />
+          <ArrowRight
+            size={25}
+          />
         </button>
 
         <h1 className="flex-1 text-center text-xl font-bold text-primary">
@@ -153,14 +205,16 @@ const total =
 
       <main
         className="
-          mx-auto flex w-full max-w-md
-          flex-col gap-5 px-5 py-5
+          mx-auto flex w-full
+          max-w-md flex-col
+          gap-5 px-5 py-5
         "
       >
         {/* Order Summary */}
         <section
           className="
-            rounded-3xl border border-gray-100
+            rounded-3xl
+            border border-gray-100
             bg-white p-5
             shadow-[0_4px_20px_rgba(0,27,61,0.05)]
           "
@@ -168,162 +222,251 @@ const total =
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="text-lg font-bold text-primary">
-                رقم الطلب #{order.orderNumber}
+                رقم الطلب #
+                {order.orderNumber}
               </h2>
 
               <p className="mt-1 text-sm text-gray-500">
-                {formatDate(order.createdAt)}
+                {formatDate(
+                  order.createdAt,
+                )}
               </p>
             </div>
 
             <div
-              className="
+              className={`
                 shrink-0 rounded-full
-                bg-green-50 px-3 py-1
+                px-3 py-1
                 text-xs font-semibold
-                text-secondary
-              "
+                ${
+                  isCancelled
+                    ? "bg-red-50 text-red-600"
+                    : "bg-green-50 text-secondary"
+                }
+              `}
             >
-              {STATUS_LABELS[order.status]}
+              {STATUS_LABELS[
+                order.status
+              ] ||
+                order.status}
             </div>
           </div>
         </section>
 
         {/* Timeline */}
-        <section
-          className="
-            rounded-3xl border border-gray-100
-            bg-white p-5
-            shadow-[0_4px_20px_rgba(0,27,61,0.05)]
-          "
-        >
-          <h3 className="mb-6 text-lg font-bold text-primary">
-            حالة الطلب
-          </h3>
-
-          <div className="relative">
-            {/* Background line */}
+        {isCancelled ? (
+          <section
+            className="
+              flex items-center gap-4
+              rounded-3xl
+              border border-red-100
+              bg-white p-5
+              shadow-[0_4px_20px_rgba(0,27,61,0.05)]
+            "
+          >
             <div
               className="
-                absolute bottom-4 right-[15px] top-4
-                w-[2px] bg-gray-200
+                flex h-12 w-12
+                shrink-0 items-center
+                justify-center
+                rounded-full bg-red-50
+                text-red-500
               "
-            />
-
-            {/* Active line */}
-            <div
-              className="
-                absolute right-[15px] top-4
-                w-[2px] bg-secondary
-                transition-all duration-500
-              "
-              style={{
-                height:
-                  currentStepIndex <= 0
-                    ? '0%'
-                    : `${
-                        (currentStepIndex /
-                          (ORDER_STEPS.length - 1)) *
-                        100
-                      }%`,
-              }}
-            />
-
-            <div className="space-y-6">
-              {ORDER_STEPS.map((step, index) => {
-                const StepIcon = step.icon
-
-                const completed =
-                  index < currentStepIndex
-
-                const active =
-                  index === currentStepIndex
-
-                const pending =
-                  index > currentStepIndex
-
-                return (
-                  <div
-                    key={step.key}
-                    className="
-                      relative z-10 flex
-                      items-start gap-4
-                    "
-                  >
-                    <div
-                      className={`
-                        flex h-8 w-8 shrink-0
-                        items-center justify-center
-                        rounded-full
-                        border-4 border-white
-                        ${
-                          completed
-                            ? 'bg-secondary text-white'
-                            : active
-                              ? 'border-2 border-secondary bg-white text-secondary'
-                              : 'bg-gray-200 text-gray-500'
-                        }
-                      `}
-                    >
-                      {completed ? (
-                        <Check size={15} />
-                      ) : active ? (
-                        <div className="h-3 w-3 rounded-full bg-secondary" />
-                      ) : (
-                        <StepIcon size={15} />
-                      )}
-                    </div>
-
-                    <div
-                      className={`
-                        pt-1
-                        ${pending ? 'opacity-45' : ''}
-                      `}
-                    >
-                      <p
-                        className={`
-                          text-sm font-semibold
-                          ${
-                            completed
-                              ? 'text-secondary'
-                              : 'text-primary'
-                          }
-                        `}
-                      >
-                        {step.label}
-                      </p>
-
-                      {active && (
-                        <p className="mt-1 text-xs leading-5 text-gray-500">
-                          {step.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
+            >
+              <XCircle
+                size={24}
+              />
             </div>
-          </div>
-        </section>
+
+            <div>
+              <h3 className="font-bold text-red-600">
+                تم إلغاء الطلب
+              </h3>
+
+              <p className="mt-1 text-sm text-gray-500">
+                الطلب لم يعد قيد التنفيذ.
+              </p>
+            </div>
+          </section>
+        ) : (
+          <section
+            className="
+              rounded-3xl
+              border border-gray-100
+              bg-white p-5
+              shadow-[0_4px_20px_rgba(0,27,61,0.05)]
+            "
+          >
+            <h3 className="mb-6 text-lg font-bold text-primary">
+              حالة الطلب
+            </h3>
+
+            <div className="relative">
+              {/* Background line */}
+              <div
+                className="
+                  absolute bottom-4
+                  right-[15px] top-4
+                  w-[2px] bg-gray-200
+                "
+              />
+
+              {/* Active line */}
+              <div
+                className="
+                  absolute right-[15px]
+                  top-4 w-[2px]
+                  bg-secondary
+                  transition-all
+                  duration-500
+                "
+                style={{
+                  height:
+                    currentStepIndex <=
+                    0
+                      ? "0%"
+                      : `${
+                          (currentStepIndex /
+                            (ORDER_STEPS.length -
+                              1)) *
+                          100
+                        }%`,
+                }}
+              />
+
+              <div className="space-y-6">
+                {ORDER_STEPS.map(
+                  (
+                    step,
+                    index,
+                  ) => {
+                    const StepIcon =
+                      step.icon;
+
+                    const completed =
+                      index <
+                      currentStepIndex;
+
+                    const active =
+                      index ===
+                      currentStepIndex;
+
+                    const pending =
+                      index >
+                      currentStepIndex;
+
+                    return (
+                      <div
+                        key={
+                          step.key
+                        }
+                        className="
+                          relative z-10
+                          flex items-start
+                          gap-4
+                        "
+                      >
+                        <div
+                          className={`
+                            flex h-8 w-8
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-full
+                            border-4
+                            border-white
+                            ${
+                              completed
+                                ? "bg-secondary text-white"
+                                : active
+                                  ? "border-2 border-secondary bg-white text-secondary"
+                                  : "bg-gray-200 text-gray-500"
+                            }
+                          `}
+                        >
+                          {completed ? (
+                            <Check
+                              size={
+                                15
+                              }
+                            />
+                          ) : active ? (
+                            <div className="h-3 w-3 rounded-full bg-secondary" />
+                          ) : (
+                            <StepIcon
+                              size={
+                                15
+                              }
+                            />
+                          )}
+                        </div>
+
+                        <div
+                          className={`
+                            pt-1
+                            ${
+                              pending
+                                ? "opacity-45"
+                                : ""
+                            }
+                          `}
+                        >
+                          <p
+                            className={`
+                              text-sm
+                              font-semibold
+                              ${
+                                completed
+                                  ? "text-secondary"
+                                  : "text-primary"
+                              }
+                            `}
+                          >
+                            {
+                              step.label
+                            }
+                          </p>
+
+                          {active && (
+                            <p className="mt-1 text-xs leading-5 text-gray-500">
+                              {
+                                step.description
+                              }
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  },
+                )}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Delivery Info */}
         <section
           className="
             flex items-start gap-3
-            rounded-3xl border border-gray-100
+            rounded-3xl
+            border border-gray-100
             bg-white p-5
             shadow-[0_4px_20px_rgba(0,27,61,0.05)]
           "
         >
           <div
             className="
-              flex h-10 w-10 shrink-0
-              items-center justify-center
-              rounded-full bg-gray-100
+              flex h-10 w-10
+              shrink-0 items-center
+              justify-center
+              rounded-full
+              bg-gray-100
               text-primary
             "
           >
-            <MapPin size={20} />
+            <MapPin
+              size={20}
+            />
           </div>
 
           <div>
@@ -332,16 +475,21 @@ const total =
             </h3>
 
             <p className="mt-1 font-medium text-primary">
-              {order.customer?.address ||
-                'لم يتم تحديد العنوان'}
+              {order.customer
+                ?.address ||
+                "لم يتم تحديد العنوان"}
             </p>
 
-            {order.customer?.phone && (
+            {order.customer
+              ?.phone && (
               <p
                 dir="ltr"
                 className="mt-1 text-right text-sm text-gray-500"
               >
-                {order.customer.phone}
+                {
+                  order.customer
+                    .phone
+                }
               </p>
             )}
           </div>
@@ -350,80 +498,106 @@ const total =
         {/* Products */}
         <section
           className="
-            rounded-3xl border border-gray-100
+            rounded-3xl
+            border border-gray-100
             bg-white p-5
             shadow-[0_4px_20px_rgba(0,27,61,0.05)]
           "
         >
           <h3 className="mb-4 text-lg font-bold text-primary">
-            المنتجات ({order.items.length})
+            المنتجات (
+            {order.items.length})
           </h3>
 
           <div className="divide-y divide-gray-100">
-            {order.items.map((item) => {
-              const price = item.discountPercentage
-                ? Math.round(
-                    item.price -
-                      item.price *
-                        (item.discountPercentage /
-                          100),
-                  )
-                : item.price
+            {order.items.map(
+              (item) => {
+                const price =
+                  item.finalPrice ??
+                  item.price;
 
-              return (
-                <div
-                  key={item.id}
-                  className="
-                    flex items-center gap-4
-                    py-4 first:pt-0 last:pb-0
-                  "
-                >
+                const lineTotal =
+                  item.lineTotal ??
+                  price *
+                    item.quantity;
+
+                return (
                   <div
+                    key={
+                      item.orderItemId ??
+                      item.id
+                    }
                     className="
-                      flex h-16 w-16 shrink-0
-                      items-center justify-center
-                      overflow-hidden rounded-xl
-                      border border-gray-100
-                      bg-gray-50
+                      flex items-center
+                      gap-4 py-4
+                      first:pt-0
+                      last:pb-0
                     "
                   >
-                    <img
-                      src={item.image}
-                      alt={item.name}
+                    <div
                       className="
-                        h-full w-full
-                        object-contain p-2
+                        flex h-16 w-16
+                        shrink-0
+                        items-center
+                        justify-center
+                        overflow-hidden
+                        rounded-xl
+                        border
+                        border-gray-100
+                        bg-gray-50
                       "
-                    />
+                    >
+                      <img
+                        src={
+                          item.image
+                        }
+                        alt={
+                          item.name
+                        }
+                        className="
+                          h-full w-full
+                          object-contain
+                          p-2
+                        "
+                      />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <h4 className="line-clamp-2 text-sm font-medium text-primary">
+                        {
+                          item.name
+                        }
+                      </h4>
+
+                      <p className="mt-1 text-xs text-gray-500">
+                        {
+                          item.unit
+                        }
+                      </p>
+
+                      <p className="mt-1 text-xs text-gray-500">
+                        الكمية:{" "}
+                        {
+                          item.quantity
+                        }
+                      </p>
+                    </div>
+
+                    <div className="shrink-0 text-sm font-bold text-primary">
+                      {lineTotal} ج.م
+                    </div>
                   </div>
-
-                  <div className="min-w-0 flex-1">
-                    <h4 className="line-clamp-2 text-sm font-medium text-primary">
-                      {item.name}
-                    </h4>
-
-                    <p className="mt-1 text-xs text-gray-500">
-                      {item.unit}
-                    </p>
-
-                    <p className="mt-1 text-xs text-gray-500">
-                      الكمية: {item.quantity}
-                    </p>
-                  </div>
-
-                  <div className="shrink-0 text-sm font-bold text-primary">
-                    {price * item.quantity} ج.م
-                  </div>
-                </div>
-              )
-            })}
+                );
+              },
+            )}
           </div>
         </section>
 
         {/* Price Breakdown */}
         <section
           className="
-            rounded-3xl border border-gray-100
+            rounded-3xl
+            border border-gray-100
             bg-white p-5
             shadow-[0_4px_20px_rgba(0,27,61,0.05)]
           "
@@ -449,32 +623,30 @@ const total =
               </span>
             </div>
 
-            {discountAmount > 0 && (
+            {discountAmount >
+              0 && (
               <div className="flex justify-between text-secondary">
                 <div>
-                  <span>الخصم</span>
-
-                  {order.discountPercentage >
-                    0 && (
-                    <span>
-                      {' '}
-                      (
-                      {
-                        order.discountPercentage
-                      }
-                      %)
-                    </span>
-                  )}
+                  <span>
+                    الخصم
+                  </span>
 
                   {order.appliedCoupon && (
                     <p className="mt-1 text-xs text-gray-500">
-                      كود: {order.appliedCoupon}
+                      كود:{" "}
+                      {
+                        order.appliedCoupon
+                      }
                     </p>
                   )}
                 </div>
 
                 <span className="font-semibold">
-                  - {discountAmount} ج.م
+                  -{" "}
+                  {
+                    discountAmount
+                  }{" "}
+                  ج.م
                 </span>
               </div>
             )}
@@ -482,8 +654,10 @@ const total =
             <div
               className="
                 flex justify-between
-                border-t border-gray-200
-                pt-4 text-lg font-bold
+                border-t
+                border-gray-200
+                pt-4 text-lg
+                font-bold
               "
             >
               <span>
@@ -498,7 +672,7 @@ const total =
         </section>
       </main>
     </div>
-  )
+  );
 }
 
-export default OrderDetailsPage
+export default OrderDetailsPage;

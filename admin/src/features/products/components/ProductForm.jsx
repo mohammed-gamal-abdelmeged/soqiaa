@@ -1,6 +1,9 @@
 // src/features/products/components/ProductForm.jsx
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 
 import StatusSwitch from "../../../components/ui/StatusSwitch";
 import ProductImageUpload from "./ProductImageUpload";
@@ -14,8 +17,10 @@ import {
 export default function ProductForm({
   mode = "add",
   initialData = null,
-  categories,
-  categoryDetails,
+  categories = [],
+  subcategories = [],
+  isSubcategoriesLoading = false,
+  onCategoryChange,
   onSubmit,
 }) {
   const [form, setForm] = useState(
@@ -25,9 +30,9 @@ export default function ProductForm({
   const [errors, setErrors] = useState({});
 
   /*
-    ========================================
-    Fill form when editing
-    ========================================
+  |--------------------------------------------------------------------------
+  | Fill Form
+  |--------------------------------------------------------------------------
   */
 
   useEffect(() => {
@@ -35,6 +40,9 @@ export default function ProductForm({
       mode === "edit" &&
       initialData
     ) {
+      const categorySlug =
+        initialData.categorySlug ?? "";
+
       setForm({
         ...createInitialProductForm(),
 
@@ -51,19 +59,29 @@ export default function ProductForm({
 
         price:
           initialData.price != null
-            ? String(initialData.price)
+            ? String(
+                initialData.price,
+              )
             : "",
 
         stock:
           initialData.stock != null
-            ? String(initialData.stock)
+            ? String(
+                initialData.stock,
+              )
             : "",
 
-        categorySlug:
-          initialData.categorySlug ?? "",
+        categorySlug,
 
+        /*
+         * مهم جدًا:
+         *
+         * subcategoryId عبارة عن UUID
+         * وليس Number.
+         */
         subcategoryId:
-          initialData.subcategoryId != null
+          initialData.subcategoryId !=
+          null
             ? String(
                 initialData.subcategoryId,
               )
@@ -84,7 +102,9 @@ export default function ProductForm({
             : "",
 
         hasBadge:
-          Boolean(initialData.badge),
+          Boolean(
+            initialData.badge,
+          ),
 
         badge:
           initialData.badge ?? "",
@@ -94,21 +114,27 @@ export default function ProductForm({
           false,
 
         isActive:
-          initialData.isActive ?? true,
+          initialData.isActive ??
+          true,
 
         description:
-          initialData.description ?? "",
+          initialData.description ??
+          "",
 
         deliveryText:
-          initialData.deliveryText ?? "",
+          initialData.deliveryText ??
+          "",
 
         rating:
           initialData.rating != null
-            ? String(initialData.rating)
+            ? String(
+                initialData.rating,
+              )
             : "",
 
         reviewsCount:
-          initialData.reviewsCount != null
+          initialData.reviewsCount !=
+          null
             ? String(
                 initialData.reviewsCount,
               )
@@ -117,11 +143,23 @@ export default function ProductForm({
 
       setErrors({});
 
+      /*
+       * في حالة Edit:
+       *
+       * لازم الـParent يعرف القسم الحالي
+       * عشان يجيب الـSubcategories الخاصة به.
+       */
+      onCategoryChange?.(
+        categorySlug,
+      );
+
       return;
     }
 
     /*
-      Add mode
+    |--------------------------------------------------------------------------
+    | Add Mode
+    |--------------------------------------------------------------------------
     */
 
     setForm(
@@ -129,86 +167,94 @@ export default function ProductForm({
     );
 
     setErrors({});
-  }, [mode, initialData]);
+
+    /*
+     * نصفر القسم في الـParent
+     * لو المستخدم كان راجع من Edit
+     * أو غير الصفحة.
+     */
+    onCategoryChange?.("");
+  }, [
+    mode,
+    initialData,
+    onCategoryChange,
+  ]);
 
   /*
-    ========================================
-    Selected Category / Subcategories
-    ========================================
-  */
-
-  const selectedCategoryDetails =
-    form.categorySlug
-      ? categoryDetails[
-          form.categorySlug
-        ]
-      : null;
-
-  const subcategories =
-    selectedCategoryDetails
-      ?.subcategories ?? [];
-
-  /*
-    ========================================
-    Generic Field Update
-    ========================================
+  |--------------------------------------------------------------------------
+  | Generic Field Update
+  |--------------------------------------------------------------------------
   */
 
   const updateField = (
     field,
     value,
   ) => {
-    setForm((current) => ({
-      ...current,
-      [field]: value,
-    }));
+    setForm(
+      (current) => ({
+        ...current,
+        [field]: value,
+      }),
+    );
 
     /*
-      Remove validation error
-      when user edits the field.
-    */
-
+     * إزالة Error الحقل بمجرد تعديله.
+     */
     if (errors[field]) {
-      setErrors((current) => ({
-        ...current,
-        [field]: "",
-      }));
+      setErrors(
+        (current) => ({
+          ...current,
+          [field]: "",
+        }),
+      );
     }
   };
 
   /*
-    ========================================
-    Category Change
-    ========================================
+  |--------------------------------------------------------------------------
+  | Category Change
+  |--------------------------------------------------------------------------
   */
 
   const handleCategoryChange = (
     categorySlug,
   ) => {
-    setForm((current) => ({
-      ...current,
+    setForm(
+      (current) => ({
+        ...current,
 
+        categorySlug,
+
+        /*
+         * الـSubcategory القديمة
+         * تخص القسم القديم،
+         * لذلك لازم تتشال.
+         */
+        subcategoryId: "",
+      }),
+    );
+
+    setErrors(
+      (current) => ({
+        ...current,
+        categorySlug: "",
+        subcategoryId: "",
+      }),
+    );
+
+    /*
+     * إبلاغ الـParent بتغيير القسم
+     * ليبدأ تحميل Subcategories الجديدة.
+     */
+    onCategoryChange?.(
       categorySlug,
-
-      /*
-        Important:
-        Reset subcategory because
-        it belongs to the previous category.
-      */
-      subcategoryId: "",
-    }));
-
-    setErrors((current) => ({
-      ...current,
-      categorySlug: "",
-      subcategoryId: "",
-    }));
+    );
   };
 
   /*
-    ========================================
-    Image Change
-    ========================================
+  |--------------------------------------------------------------------------
+  | Image Change
+  |--------------------------------------------------------------------------
   */
 
   const handleImageChange = ({
@@ -216,36 +262,38 @@ export default function ProductForm({
     preview,
     error,
   }) => {
-    /*
-      If ProductImageUpload sends an error,
-      keep the current image when editing.
-    */
-
     if (error) {
-      setErrors((current) => ({
-        ...current,
-        image: error,
-      }));
+      setErrors(
+        (current) => ({
+          ...current,
+          image: error,
+        }),
+      );
 
       return;
     }
 
-    setForm((current) => ({
-      ...current,
-      imageFile: file,
-      image: preview,
-    }));
+    setForm(
+      (current) => ({
+        ...current,
 
-    setErrors((current) => ({
-      ...current,
-      image: "",
-    }));
+        imageFile: file,
+        image: preview,
+      }),
+    );
+
+    setErrors(
+      (current) => ({
+        ...current,
+        image: "",
+      }),
+    );
   };
 
   /*
-    ========================================
-    Submit
-    ========================================
+  |--------------------------------------------------------------------------
+  | Submit
+  |--------------------------------------------------------------------------
   */
 
   const handleSubmit = (
@@ -277,9 +325,9 @@ export default function ProductForm({
       onSubmit={handleSubmit}
       className="grid grid-cols-1 gap-6 xl:grid-cols-[320px_minmax(0,1fr)]"
     >
-      {/* =================================
-          IMAGE
-      ================================= */}
+      {/* ------------------------------------------------------------------ */}
+      {/* Image */}
+      {/* ------------------------------------------------------------------ */}
 
       <div>
         <ProductImageUpload
@@ -291,17 +339,19 @@ export default function ProductForm({
         />
       </div>
 
-      {/* =================================
-          MAIN FORM
-      ================================= */}
+      {/* ------------------------------------------------------------------ */}
+      {/* Main Form */}
+      {/* ------------------------------------------------------------------ */}
 
       <div className="space-y-6">
         {/* Product Name */}
 
         <div>
-          <label className="mb-2 block text-sm font-semibold text-slate-700"> 
-            اسم المنتج
-             <span className="text-red-500">*</span>
+          <label className="mb-2 block text-sm font-semibold text-slate-700">
+            اسم المنتج{" "}
+            <span className="text-red-500">
+              *
+            </span>
           </label>
 
           <input
@@ -332,17 +382,19 @@ export default function ProductForm({
           )}
         </div>
 
-        {/* =================================
-            CATEGORY
-        ================================= */}
+        {/* ---------------------------------------------------------------- */}
+        {/* Category */}
+        {/* ---------------------------------------------------------------- */}
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {/* Main Category */}
 
           <div>
             <label className="mb-2 block text-sm font-semibold text-slate-700">
-              القسم الأساسي
-               <span className="text-red-500">*</span>
+              القسم الأساسي{" "}
+              <span className="text-red-500">
+                *
+              </span>
             </label>
 
             <select
@@ -357,7 +409,7 @@ export default function ProductForm({
               className={[
                 "h-11 w-full rounded-xl border bg-white px-4 text-sm outline-none transition",
                 errors.categorySlug
-                  ? "border-red-300 focus:border-red-500"
+                  ? "border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-100"
                   : "border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100",
               ].join(" ")}
             >
@@ -394,8 +446,10 @@ export default function ProductForm({
 
           <div>
             <label className="mb-2 block text-sm font-semibold text-slate-700">
-              القسم الفرعي
-               <span className="text-red-500">*</span>
+              القسم الفرعي{" "}
+              <span className="text-red-500">
+                *
+              </span>
             </label>
 
             <select
@@ -403,7 +457,8 @@ export default function ProductForm({
                 form.subcategoryId
               }
               disabled={
-                !form.categorySlug
+                !form.categorySlug ||
+                isSubcategoriesLoading
               }
               onChange={(event) =>
                 updateField(
@@ -414,14 +469,19 @@ export default function ProductForm({
               className={[
                 "h-11 w-full rounded-xl border bg-white px-4 text-sm outline-none transition disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400",
                 errors.subcategoryId
-                  ? "border-red-300 focus:border-red-500"
+                  ? "border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-100"
                   : "border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100",
               ].join(" ")}
             >
               <option value="">
-                {form.categorySlug
-                  ? "اختر القسم الفرعي"
-                  : "اختر القسم الأساسي أولاً"}
+                {!form.categorySlug
+                  ? "اختر القسم الأساسي أولاً"
+                  : isSubcategoriesLoading
+                    ? "جاري تحميل الأقسام الفرعية..."
+                    : subcategories.length ===
+                        0
+                      ? "لا توجد أقسام فرعية"
+                      : "اختر القسم الفرعي"}
               </option>
 
               {subcategories.map(
@@ -452,17 +512,19 @@ export default function ProductForm({
           </div>
         </div>
 
-        {/* =================================
-            UNIT / PRICE / STOCK
-        ================================= */}
+        {/* ---------------------------------------------------------------- */}
+        {/* Unit / Price / Stock */}
+        {/* ---------------------------------------------------------------- */}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {/* Unit */}
 
           <div>
             <label className="mb-2 block text-sm font-semibold text-slate-700">
-              الوزن / وحدة القياس
-               <span className="text-red-500">*</span>
+              الوزن / وحدة القياس{" "}
+              <span className="text-red-500">
+                *
+              </span>
             </label>
 
             <input
@@ -478,7 +540,7 @@ export default function ProductForm({
               className={[
                 "h-11 w-full rounded-xl border px-4 text-sm outline-none transition",
                 errors.unit
-                  ? "border-red-300 focus:border-red-500"
+                  ? "border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-100"
                   : "border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100",
               ].join(" ")}
             />
@@ -494,8 +556,10 @@ export default function ProductForm({
 
           <div>
             <label className="mb-2 block text-sm font-semibold text-slate-700">
-              السعر
-               <span className="text-red-500">*</span>
+              السعر{" "}
+              <span className="text-red-500">
+                *
+              </span>
             </label>
 
             <input
@@ -513,7 +577,7 @@ export default function ProductForm({
               className={[
                 "h-11 w-full rounded-xl border px-4 text-sm outline-none transition",
                 errors.price
-                  ? "border-red-300 focus:border-red-500"
+                  ? "border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-100"
                   : "border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100",
               ].join(" ")}
             />
@@ -529,8 +593,10 @@ export default function ProductForm({
 
           <div>
             <label className="mb-2 block text-sm font-semibold text-slate-700">
-              المخزون
-               <span className="text-red-500">*</span>
+              المخزون{" "}
+              <span className="text-red-500">
+                *
+              </span>
             </label>
 
             <input
@@ -548,7 +614,7 @@ export default function ProductForm({
               className={[
                 "h-11 w-full rounded-xl border px-4 text-sm outline-none transition",
                 errors.stock
-                  ? "border-red-300 focus:border-red-500"
+                  ? "border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-100"
                   : "border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100",
               ].join(" ")}
             />
@@ -561,9 +627,9 @@ export default function ProductForm({
           </div>
         </div>
 
-        {/* =================================
-            TOGGLES
-        ================================= */}
+        {/* ---------------------------------------------------------------- */}
+        {/* Toggles */}
+        {/* ---------------------------------------------------------------- */}
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <ToggleCard
@@ -596,21 +662,19 @@ export default function ProductForm({
               form.hasDiscount
             }
             onChange={(value) => {
-              setForm((current) => ({
-                ...current,
+              setForm(
+                (current) => ({
+                  ...current,
 
-                hasDiscount:
-                  value,
+                  hasDiscount:
+                    value,
 
-                /*
-                  Clear discount value
-                  when disabled.
-                */
-                discountPercentage:
-                  value
-                    ? current.discountPercentage
-                    : "",
-              }));
+                  discountPercentage:
+                    value
+                      ? current.discountPercentage
+                      : "",
+                }),
+              );
 
               setErrors(
                 (current) => ({
@@ -626,15 +690,17 @@ export default function ProductForm({
             label="يوجد بادج"
             value={form.hasBadge}
             onChange={(value) => {
-              setForm((current) => ({
-                ...current,
+              setForm(
+                (current) => ({
+                  ...current,
 
-                hasBadge: value,
+                  hasBadge: value,
 
-                badge: value
-                  ? current.badge
-                  : "",
-              }));
+                  badge: value
+                    ? current.badge
+                    : "",
+                }),
+              );
 
               setErrors(
                 (current) => ({
@@ -646,23 +712,25 @@ export default function ProductForm({
           />
         </div>
 
-        {/* =================================
-            DISCOUNT
-        ================================= */}
+        {/* ---------------------------------------------------------------- */}
+        {/* Discount */}
+        {/* ---------------------------------------------------------------- */}
 
         {form.hasDiscount && (
           <div>
             <label className="mb-2 block text-sm font-semibold text-slate-700">
-              نسبة الخصم
-               <span className="text-red-500">*</span>
+              نسبة الخصم{" "}
+              <span className="text-red-500">
+                *
+              </span>
             </label>
 
             <div className="relative max-w-xs">
               <input
                 type="number"
-                min="1"
+                min="0.01"
                 max="100"
-                step="1"
+                step="0.01"
                 value={
                   form.discountPercentage
                 }
@@ -676,7 +744,7 @@ export default function ProductForm({
                 className={[
                   "h-11 w-full rounded-xl border px-4 pl-10 text-sm outline-none transition",
                   errors.discountPercentage
-                    ? "border-red-300 focus:border-red-500"
+                    ? "border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-100"
                     : "border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100",
                 ].join(" ")}
               />
@@ -696,15 +764,17 @@ export default function ProductForm({
           </div>
         )}
 
-        {/* =================================
-            BADGE
-        ================================= */}
+        {/* ---------------------------------------------------------------- */}
+        {/* Badge */}
+        {/* ---------------------------------------------------------------- */}
 
         {form.hasBadge && (
           <div>
             <label className="mb-2 block text-sm font-semibold text-slate-700">
-              نص البادج
-              <span className="text-red-500">*</span>
+              نص البادج{" "}
+              <span className="text-red-500">
+                *
+              </span>
             </label>
 
             <input
@@ -720,7 +790,7 @@ export default function ProductForm({
               className={[
                 "h-11 w-full rounded-xl border px-4 text-sm outline-none transition",
                 errors.badge
-                  ? "border-red-300 focus:border-red-500"
+                  ? "border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-100"
                   : "border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100",
               ].join(" ")}
             />
@@ -733,9 +803,9 @@ export default function ProductForm({
           </div>
         )}
 
-        {/* =================================
-            DESCRIPTION
-        ================================= */}
+        {/* ---------------------------------------------------------------- */}
+        {/* Description */}
+        {/* ---------------------------------------------------------------- */}
 
         <div>
           <label className="mb-2 block text-sm font-semibold text-slate-700">
@@ -754,13 +824,26 @@ export default function ProductForm({
               )
             }
             placeholder="أدخل وصف المنتج"
-            className="w-full resize-y rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+            className={[
+              "w-full resize-y rounded-xl border px-4 py-3 text-sm outline-none transition",
+              errors.description
+                ? "border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-100"
+                : "border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100",
+            ].join(" ")}
           />
+
+          {errors.description && (
+            <p className="mt-1.5 text-xs text-red-600">
+              {
+                errors.description
+              }
+            </p>
+          )}
         </div>
 
-        {/* =================================
-            DELIVERY TEXT
-        ================================= */}
+        {/* ---------------------------------------------------------------- */}
+        {/* Delivery Text */}
+        {/* ---------------------------------------------------------------- */}
 
         <div>
           <label className="mb-2 block text-sm font-semibold text-slate-700">
@@ -779,13 +862,26 @@ export default function ProductForm({
               )
             }
             placeholder="مثال: يصل خلال 30 دقيقة"
-            className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+            className={[
+              "h-11 w-full rounded-xl border px-4 text-sm outline-none transition",
+              errors.deliveryText
+                ? "border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-100"
+                : "border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100",
+            ].join(" ")}
           />
+
+          {errors.deliveryText && (
+            <p className="mt-1.5 text-xs text-red-600">
+              {
+                errors.deliveryText
+              }
+            </p>
+          )}
         </div>
 
-        {/* =================================
-            RATING / REVIEWS
-        ================================= */}
+        {/* ---------------------------------------------------------------- */}
+        {/* Rating / Reviews */}
+        {/* ---------------------------------------------------------------- */}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {/* Rating */}
@@ -811,7 +907,7 @@ export default function ProductForm({
               className={[
                 "h-11 w-full rounded-xl border px-4 text-sm outline-none transition",
                 errors.rating
-                  ? "border-red-300 focus:border-red-500"
+                  ? "border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-100"
                   : "border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100",
               ].join(" ")}
             />
@@ -847,7 +943,7 @@ export default function ProductForm({
               className={[
                 "h-11 w-full rounded-xl border px-4 text-sm outline-none transition",
                 errors.reviewsCount
-                  ? "border-red-300 focus:border-red-500"
+                  ? "border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-100"
                   : "border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100",
               ].join(" ")}
             />
@@ -867,9 +963,9 @@ export default function ProductForm({
 }
 
 /*
-  ========================================
-  Toggle Card
-  ========================================
+|--------------------------------------------------------------------------
+| Toggle Card
+|--------------------------------------------------------------------------
 */
 
 function ToggleCard({

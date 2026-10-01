@@ -19,17 +19,23 @@ const PASSWORD_HASH_OPTIONS = {
 };
 
 export async function registerUser(data) {
-  const { fullName, phone, address, password } = data;
+  const {
+    fullName,
+    phone,
+    address,
+    password,
+  } = data;
 
-  const existingUser = await prisma.user.findUnique({
-    where: {
-      phone,
-    },
+  const existingUser =
+    await prisma.user.findUnique({
+      where: {
+        phone,
+      },
 
-    select: {
-      id: true,
-    },
-  });
+      select: {
+        id: true,
+      },
+    });
 
   if (existingUser) {
     throw new AppError(
@@ -39,66 +45,93 @@ export async function registerUser(data) {
     );
   }
 
-  const passwordHash = await argon2.hash(password, PASSWORD_HASH_OPTIONS);
+  const passwordHash =
+    await argon2.hash(
+      password,
+      PASSWORD_HASH_OPTIONS,
+    );
 
   try {
-    const user = await prisma.$transaction(async (tx) => {
-      return tx.user.create({
-        data: {
-          fullName,
-          phone,
-          passwordHash,
+    const user =
+      await prisma.$transaction(
+        async (tx) => {
+          return tx.user.create({
+            data: {
+              fullName,
+              phone,
+              passwordHash,
 
-          addresses: {
-            create: {
-              fullAddress: address,
-              label: "Home",
-              isDefault: true,
-            },
-          },
+              addresses: {
+                create: {
+                  fullAddress:
+                    address,
 
-          cart: {
-            create: {},
-          },
-        },
+                  label: "Home",
 
-        select: {
-          id: true,
-          fullName: true,
-          phone: true,
-          role: true,
-          isActive: true,
-          createdAt: true,
+                  isDefault:
+                    true,
+                },
+              },
 
-          addresses: {
-            where: {
-              isDefault: true,
+              cart: {
+                create: {},
+              },
             },
 
             select: {
               id: true,
-              label: true,
-              fullAddress: true,
-              isDefault: true,
-            },
+              fullName: true,
+              phone: true,
+              role: true,
+              isActive: true,
+              createdAt: true,
 
-            take: 1,
-          },
+              addresses: {
+                where: {
+                  isDefault: true,
+                },
+
+                select: {
+                  id: true,
+                  label: true,
+                  fullAddress: true,
+                  isDefault: true,
+                },
+
+                take: 1,
+              },
+            },
+          });
         },
-      });
-    });
+      );
 
     return {
       id: user.id,
-      fullName: user.fullName,
-      phone: user.phone,
-      role: user.role,
-      isActive: user.isActive,
-      address: user.addresses[0] ?? null,
-      createdAt: user.createdAt,
+
+      fullName:
+        user.fullName,
+
+      phone:
+        user.phone,
+
+      role:
+        user.role,
+
+      isActive:
+        user.isActive,
+
+      address:
+        user.addresses[0] ??
+        null,
+
+      createdAt:
+        user.createdAt,
     };
   } catch (error) {
-    if (error?.code === "P2002") {
+    if (
+      error?.code ===
+      "P2002"
+    ) {
       throw new AppError(
         "Phone number is already registered",
         409,
@@ -110,39 +143,48 @@ export async function registerUser(data) {
   }
 }
 
-export async function loginUser(data) {
-  const { phone, password } = data;
+export async function loginUser(
+  data,
+  {
+    requiredRole = null,
+  } = {},
+) {
+  const {
+    phone,
+    password,
+  } = data;
 
-  const user = await prisma.user.findUnique({
-    where: {
-      phone,
-    },
-
-    select: {
-      id: true,
-      fullName: true,
-      phone: true,
-      passwordHash: true,
-      role: true,
-      isActive: true,
-      createdAt: true,
-
-      addresses: {
-        where: {
-          isDefault: true,
-        },
-
-        select: {
-          id: true,
-          label: true,
-          fullAddress: true,
-          isDefault: true,
-        },
-
-        take: 1,
+  const user =
+    await prisma.user.findUnique({
+      where: {
+        phone,
       },
-    },
-  });
+
+      select: {
+        id: true,
+        fullName: true,
+        phone: true,
+        passwordHash: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+
+        addresses: {
+          where: {
+            isDefault: true,
+          },
+
+          select: {
+            id: true,
+            label: true,
+            fullAddress: true,
+            isDefault: true,
+          },
+
+          take: 1,
+        },
+      },
+    });
 
   if (!user) {
     throw new AppError(
@@ -152,7 +194,11 @@ export async function loginUser(data) {
     );
   }
 
-  const passwordIsValid = await argon2.verify(user.passwordHash, password);
+  const passwordIsValid =
+    await argon2.verify(
+      user.passwordHash,
+      password,
+    );
 
   if (!passwordIsValid) {
     throw new AppError(
@@ -163,80 +209,172 @@ export async function loginUser(data) {
   }
 
   if (!user.isActive) {
-    throw new AppError("Account is disabled", 403, "ACCOUNT_DISABLED");
+    throw new AppError(
+      "Account is disabled",
+      403,
+      "ACCOUNT_DISABLED",
+    );
   }
 
-  const sessionToken = generateSessionToken();
+  /*
+  |--------------------------------------------------------------------------
+  | Role Requirement
+  |--------------------------------------------------------------------------
+  |
+  | Customer website:
+  |   requiredRole = null
+  |
+  |   USER  -> allowed
+  |   ADMIN -> allowed
+  |
+  | Admin dashboard:
+  |   requiredRole = "ADMIN"
+  |
+  |   USER  -> rejected BEFORE session creation
+  |   ADMIN -> allowed
+  |--------------------------------------------------------------------------
+  */
 
-  const csrfToken = generateCsrfToken();
+  if (
+    requiredRole &&
+    user.role !== requiredRole
+  ) {
+    throw new AppError(
+      "Admin access required",
+      403,
+      "ADMIN_ACCESS_REQUIRED",
+    );
+  }
 
-  const tokenHash = hashSessionToken(sessionToken);
+  /*
+  |--------------------------------------------------------------------------
+  | Create Session
+  |--------------------------------------------------------------------------
+  |
+  | We only reach this point after:
+  |
+  | - credentials are valid
+  | - account is active
+  | - required role is satisfied
+  |--------------------------------------------------------------------------
+  */
 
-  const csrfTokenHash = hashCsrfToken(csrfToken);
+  const sessionToken =
+    generateSessionToken();
 
-  const expiresAt = createSessionExpiry();
+  const csrfToken =
+    generateCsrfToken();
+
+  const tokenHash =
+    hashSessionToken(
+      sessionToken,
+    );
+
+  const csrfTokenHash =
+    hashCsrfToken(
+      csrfToken,
+    );
+
+  const expiresAt =
+    createSessionExpiry();
 
   await prisma.session.create({
     data: {
-      userId: user.id,
+      userId:
+        user.id,
+
       tokenHash,
+
       csrfTokenHash,
+
       expiresAt,
     },
   });
 
   return {
     user: {
-      id: user.id,
-      fullName: user.fullName,
-      phone: user.phone,
-      role: user.role,
-      isActive: user.isActive,
-      address: user.addresses[0] ?? null,
-      createdAt: user.createdAt,
+      id:
+        user.id,
+
+      fullName:
+        user.fullName,
+
+      phone:
+        user.phone,
+
+      role:
+        user.role,
+
+      isActive:
+        user.isActive,
+
+      address:
+        user.addresses[0] ??
+        null,
+
+      createdAt:
+        user.createdAt,
     },
 
     session: {
-      token: sessionToken,
+      token:
+        sessionToken,
+
       expiresAt,
     },
 
     csrfToken,
   };
 }
-export async function logoutUser(sessionId, userId) {
+
+export async function logoutUser(
+  sessionId,
+  userId,
+) {
   await prisma.session.updateMany({
     where: {
-      id: sessionId,
+      id:
+        sessionId,
+
       userId,
-      revokedAt: null,
+
+      revokedAt:
+        null,
     },
 
     data: {
-      revokedAt: new Date(),
+      revokedAt:
+        new Date(),
     },
   });
 }
+
 export async function refreshCsrfToken(
   sessionId,
-  userId
+  userId,
 ) {
   const csrfToken =
     generateCsrfToken();
 
   const csrfTokenHash =
     hashCsrfToken(
-      csrfToken
+      csrfToken,
     );
 
   const result =
     await prisma.session.updateMany({
       where: {
-        id: sessionId,
+        id:
+          sessionId,
+
         userId,
-        revokedAt: null,
+
+        revokedAt:
+          null,
+
         expiresAt: {
-          gt: new Date(),
+          gt:
+            new Date(),
         },
       },
 
@@ -245,11 +383,13 @@ export async function refreshCsrfToken(
       },
     });
 
-  if (result.count !== 1) {
+  if (
+    result.count !== 1
+  ) {
     throw new AppError(
       "Authentication required",
       401,
-      "AUTHENTICATION_REQUIRED"
+      "AUTHENTICATION_REQUIRED",
     );
   }
 

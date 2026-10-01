@@ -16,6 +16,7 @@ import cartRouter from "./modules/cart/cart.routes.js";
 import favoritesRouter from "./modules/favorites/favorites.routes.js";
 import ordersRouter from "./modules/orders/orders.routes.js";
 import customersRouter from "./modules/customers/customers.routes.js";
+import usersRouter from "./modules/users/users.routes.js";
 
 import { notFound } from "./middlewares/notFound.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
@@ -170,6 +171,16 @@ app.use(
 app.use(
   "/api/v1/admin",
   adminRouter
+);
+
+/*
+ * Users router contains:
+ *
+ * /users/me
+ */
+app.use(
+  "/api/v1",
+  usersRouter
 );
 
 /*

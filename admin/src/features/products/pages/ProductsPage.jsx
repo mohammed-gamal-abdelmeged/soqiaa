@@ -1,87 +1,237 @@
 import {
-  useMemo,
   useState,
 } from "react";
 
-import { useNavigate } from "react-router-dom";
+import {
+  useNavigate,
+} from "react-router-dom";
 
 import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import { appToast } from "../../../lib/toast";
+
+import {
+  useAdminCategories,
+} from "../../categories/hooks/useAdminCategories";
 
 import ProductMobileCard from "../components/ProductMobileCard";
 import ProductsTable from "../components/ProductsTable";
 import ProductsToolbar from "../components/ProductsToolbar";
 
-import { categoriesMock } from "../../categories/data/categories.mock";
-import { productsMock } from "../data/products.mock";
-
-import { filterProducts } from "../utils/productFilters";
+import {
+  useAdminProducts,
+  useDeleteAdminProduct,
+} from "../hooks/useAdminProducts";
 
 export default function ProductsPage() {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-  const [products, setProducts] = useState(
-    () => [...productsMock],
-  );
+  /*
+  |--------------------------------------------------------------------------
+  | Search
+  |--------------------------------------------------------------------------
+  |
+  | searchInput:
+  | القيمة المكتوبة في الـinput.
+  |
+  | search:
+  | القيمة اللي اتعمل لها Submit
+  | واللي فعلاً تروح للـBackend.
+  |--------------------------------------------------------------------------
+  */
 
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("all");
+  const [
+    searchInput,
+    setSearchInput,
+  ] = useState("");
 
-  const [deleteModal, setDeleteModal] =
-    useState({
-      isOpen: false,
-      product: null,
+  const [
+    search,
+    setSearch,
+  ] = useState("");
+
+  const [
+    category,
+    setCategory,
+  ] = useState("all");
+
+  /*
+  |--------------------------------------------------------------------------
+  | Delete Modal
+  |--------------------------------------------------------------------------
+  */
+
+  const [
+    deleteModal,
+    setDeleteModal,
+  ] = useState({
+    isOpen: false,
+    product: null,
+  });
+
+  /*
+  |--------------------------------------------------------------------------
+  | Queries
+  |--------------------------------------------------------------------------
+  */
+
+  const {
+    data: categories = [],
+    isLoading:
+      isCategoriesLoading,
+  } =
+    useAdminCategories();
+
+  const {
+    data: products = [],
+    isLoading:
+      isProductsLoading,
+    isError:
+      isProductsError,
+    error:
+      productsError,
+  } =
+    useAdminProducts({
+      search:
+        search ||
+        undefined,
+
+      categorySlug:
+        category === "all"
+          ? undefined
+          : category,
     });
 
-  const filteredProducts = useMemo(
-    () =>
-      filterProducts({
-        products,
-        search,
-        category,
-      }),
-    [products, search, category],
-  );
+  /*
+  |--------------------------------------------------------------------------
+  | Mutations
+  |--------------------------------------------------------------------------
+  */
+
+  const deleteProductMutation =
+    useDeleteAdminProduct();
+
+  /*
+  |--------------------------------------------------------------------------
+  | Navigation
+  |--------------------------------------------------------------------------
+  */
 
   const handleAddProduct = () => {
-    navigate("/products/new");
+    navigate(
+      "/products/new",
+    );
   };
 
-  const handleEditProduct = (product) => {
-    navigate(`/products/${product.id}/edit`);
+  const handleEditProduct = (
+    product,
+  ) => {
+    navigate(
+      `/products/${product.id}/edit`,
+    );
   };
 
-  const handleOpenDeleteProduct = (product) => {
+  /*
+  |--------------------------------------------------------------------------
+  | Search
+  |--------------------------------------------------------------------------
+  */
+
+  const handleSearchSubmit =
+    () => {
+      setSearch(
+        searchInput.trim(),
+      );
+    };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Delete
+  |--------------------------------------------------------------------------
+  */
+
+  const handleOpenDeleteProduct = (
+    product,
+  ) => {
     setDeleteModal({
       isOpen: true,
       product,
     });
   };
 
-  const handleCloseDeleteProduct = () => {
-    setDeleteModal({
-      isOpen: false,
-      product: null,
-    });
-  };
+  const handleCloseDeleteProduct =
+    () => {
+      if (
+        deleteProductMutation.isPending
+      ) {
+        return;
+      }
 
-  const handleConfirmDeleteProduct = () => {
-    const product = deleteModal.product;
+      setDeleteModal({
+        isOpen: false,
+        product: null,
+      });
+    };
 
-    if (!product) return;
+  const handleConfirmDeleteProduct =
+    async () => {
+      const product =
+        deleteModal.product;
 
-    setProducts((current) =>
-      current.filter(
-        (item) => item.id !== product.id,
-      ),
-    );
+      if (
+        !product ||
+        deleteProductMutation.isPending
+      ) {
+        return;
+      }
 
-    appToast.success(
-      `تم حذف منتج ${product.name}`,
-    );
+      try {
+        await deleteProductMutation.mutateAsync(
+          product.id,
+        );
 
-    handleCloseDeleteProduct();
-  };
+        appToast.success(
+          `تم حذف منتج ${product.name}`,
+        );
+
+        setDeleteModal({
+          isOpen: false,
+          product: null,
+        });
+      } catch (error) {
+        const errorCode =
+          error?.response
+            ?.data
+            ?.error
+            ?.code;
+
+        if (
+          errorCode ===
+          "PRODUCT_NOT_FOUND"
+        ) {
+          appToast.error(
+            "المنتج غير موجود أو تم حذفه بالفعل",
+          );
+
+          setDeleteModal({
+            isOpen: false,
+            product: null,
+          });
+
+          return;
+        }
+
+        appToast.error(
+          "تعذر حذف المنتج، حاول مرة أخرى",
+        );
+      }
+    };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Render
+  |--------------------------------------------------------------------------
+  */
 
   return (
     <>
@@ -97,31 +247,92 @@ export default function ProductsPage() {
         </header>
 
         <ProductsToolbar
-          search={search}
-          onSearchChange={setSearch}
-          category={category}
-          onCategoryChange={setCategory}
-          categories={categoriesMock}
-          onAddProduct={handleAddProduct}
+          search={
+            searchInput
+          }
+          onSearchChange={
+            setSearchInput
+          }
+          onSearchSubmit={
+            handleSearchSubmit
+          }
+          category={
+            category
+          }
+          onCategoryChange={
+            setCategory
+          }
+          categories={
+            categories
+          }
+          onAddProduct={
+            handleAddProduct
+          }
         />
 
-        {filteredProducts.length > 0 ? (
+        {isProductsLoading ||
+        isCategoriesLoading ? (
+          <div className="rounded-2xl border border-slate-200 bg-white px-6 py-14 text-center">
+            <p className="text-sm font-semibold text-slate-500">
+              جاري تحميل المنتجات...
+            </p>
+          </div>
+        ) : isProductsError ? (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-6 py-14 text-center">
+            <p className="text-sm font-semibold text-red-700">
+              تعذر تحميل المنتجات
+            </p>
+
+            {productsError
+              ?.response
+              ?.data
+              ?.error
+              ?.message ? (
+              <p className="mt-2 text-xs text-red-500">
+                {
+                  productsError
+                    .response
+                    .data
+                    .error
+                    .message
+                }
+              </p>
+            ) : null}
+          </div>
+        ) : products.length >
+          0 ? (
           <>
             <ProductsTable
-              products={filteredProducts}
-              onEdit={handleEditProduct}
-              onDelete={handleOpenDeleteProduct}
+              products={
+                products
+              }
+              onEdit={
+                handleEditProduct
+              }
+              onDelete={
+                handleOpenDeleteProduct
+              }
             />
 
             <div className="space-y-3 md:hidden">
-              {filteredProducts.map((product) => (
-                <ProductMobileCard
-                  key={product.id}
-                  product={product}
-                  onEdit={handleEditProduct}
-                  onDelete={handleOpenDeleteProduct}
-                />
-              ))}
+              {products.map(
+                (product) => (
+                  <ProductMobileCard
+                    key={
+                      product.id
+                    }
+                    product={
+                      product
+                    }
+                    onEdit={
+                      handleEditProduct
+                    }
+                    onDelete={
+                      handleOpenDeleteProduct
+                    }
+                  />
+                ),
+              )}
             </div>
           </>
         ) : (
@@ -134,18 +345,28 @@ export default function ProductsPage() {
       </div>
 
       <ConfirmDialog
-        isOpen={deleteModal.isOpen}
+        isOpen={
+          deleteModal.isOpen
+        }
         title="حذف المنتج"
         description={
           deleteModal.product
-            ? `هل تريد حذف المنتج "${deleteModal.product.name}"؟`
+            ? `هل تريد حذف المنتج "${deleteModal.product.name}" نهائيًا؟`
             : ""
         }
-        confirmText="نعم، حذف المنتج"
+        confirmText={
+          deleteProductMutation.isPending
+            ? "جاري الحذف..."
+            : "نعم، حذف المنتج"
+        }
         cancelText="إلغاء"
         variant="danger"
-        onClose={handleCloseDeleteProduct}
-        onConfirm={handleConfirmDeleteProduct}
+        onClose={
+          handleCloseDeleteProduct
+        }
+        onConfirm={
+          handleConfirmDeleteProduct
+        }
       />
     </>
   );

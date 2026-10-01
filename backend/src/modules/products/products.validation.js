@@ -9,6 +9,19 @@ const MAX_INT = 2_147_483_647;
 |--------------------------------------------------------------------------
 */
 
+function emptyStringToUndefined(
+  value
+) {
+  if (
+    typeof value === "string" &&
+    value.trim() === ""
+  ) {
+    return undefined;
+  }
+
+  return value;
+}
+
 /*
  * Multipart/form-data sends numeric values as strings.
  *
@@ -30,7 +43,8 @@ function numberInputSchema(schema) {
         return value;
       }
 
-      const trimmed = value.trim();
+      const trimmed =
+        value.trim();
 
       if (trimmed === "") {
         return value;
@@ -43,15 +57,30 @@ function numberInputSchema(schema) {
 }
 
 const multipartBooleanSchema =
-  z.union([
-    z.boolean(),
-    z.literal("true"),
-    z.literal("false"),
-  ]).transform(
-    (value) =>
-      value === true ||
-      value === "true"
-  );
+  z
+    .union([
+      z.boolean(),
+      z.literal("true"),
+      z.literal("false"),
+    ])
+    .transform(
+      (value) =>
+        value === true ||
+        value === "true"
+    );
+
+const queryBooleanSchema =
+  z
+    .union([
+      z.boolean(),
+      z.literal("true"),
+      z.literal("false"),
+    ])
+    .transform(
+      (value) =>
+        value === true ||
+        value === "true"
+    );
 
 function optionalTextSchema(
   maxLength,
@@ -70,7 +99,8 @@ function optionalTextSchema(
       return value;
     },
 
-    z.string()
+    z
+      .string()
       .trim()
       .min(
         1,
@@ -91,7 +121,8 @@ function optionalTextSchema(
 */
 
 const nameSchema =
-  z.string()
+  z
+    .string()
     .trim()
     .min(
       2,
@@ -103,7 +134,8 @@ const nameSchema =
     );
 
 const unitSchema =
-  z.string()
+  z
+    .string()
     .trim()
     .min(
       1,
@@ -116,7 +148,8 @@ const unitSchema =
 
 const priceSchema =
   numberInputSchema(
-    z.number()
+    z
+      .number()
       .finite(
         "Price must be a valid number"
       )
@@ -135,7 +168,8 @@ const priceSchema =
 
 const stockSchema =
   numberInputSchema(
-    z.number()
+    z
+      .number()
       .int(
         "Stock must be an integer"
       )
@@ -151,7 +185,8 @@ const stockSchema =
 
 const discountPercentageSchema =
   numberInputSchema(
-    z.number()
+    z
+      .number()
       .finite(
         "Discount percentage must be a valid number"
       )
@@ -171,7 +206,8 @@ const discountPercentageSchema =
 
 const ratingSchema =
   numberInputSchema(
-    z.number()
+    z
+      .number()
       .finite(
         "Rating must be a valid number"
       )
@@ -191,7 +227,8 @@ const ratingSchema =
 
 const reviewsCountSchema =
   numberInputSchema(
-    z.number()
+    z
+      .number()
       .int(
         "Reviews count must be an integer"
       )
@@ -206,7 +243,8 @@ const reviewsCountSchema =
   );
 
 const categorySlugSchema =
-  z.string()
+  z
+    .string()
     .trim()
     .min(
       1,
@@ -229,59 +267,64 @@ const subcategoryIdSchema =
 */
 
 export const createProductSchema =
-  z.object({
-    name: nameSchema,
+  z
+    .object({
+      name:
+        nameSchema,
 
-    unit: unitSchema,
+      unit:
+        unitSchema,
 
-    price: priceSchema,
+      price:
+        priceSchema,
 
-    stock: stockSchema,
+      stock:
+        stockSchema,
 
-    categorySlug:
-      categorySlugSchema,
+      categorySlug:
+        categorySlugSchema,
 
-    subcategoryId:
-      subcategoryIdSchema,
+      subcategoryId:
+        subcategoryIdSchema,
 
-    discountPercentage:
-      discountPercentageSchema
-        .default(0),
+      discountPercentage:
+        discountPercentageSchema
+          .default(0),
 
-    description:
-      optionalTextSchema(
-        5000,
-        "Description"
-      ).default(null),
+      description:
+        optionalTextSchema(
+          5000,
+          "Description"
+        ).default(null),
 
-    badge:
-      optionalTextSchema(
-        80,
-        "Badge"
-      ).default(null),
+      badge:
+        optionalTextSchema(
+          80,
+          "Badge"
+        ).default(null),
 
-    deliveryText:
-      optionalTextSchema(
-        160,
-        "Delivery text"
-      ).default(null),
+      deliveryText:
+        optionalTextSchema(
+          160,
+          "Delivery text"
+        ).default(null),
 
-    isBestSeller:
-      multipartBooleanSchema
-        .default(false),
+      isBestSeller:
+        multipartBooleanSchema
+          .default(false),
 
-    isActive:
-      multipartBooleanSchema
-        .default(true),
+      isActive:
+        multipartBooleanSchema
+          .default(true),
 
-    rating:
-      ratingSchema
-        .default(0),
+      rating:
+        ratingSchema
+          .default(0),
 
-    reviewsCount:
-      reviewsCountSchema
-        .default(0),
-  })
+      reviewsCount:
+        reviewsCountSchema
+          .default(0),
+    })
     .strict();
 
 /*
@@ -291,88 +334,139 @@ export const createProductSchema =
 */
 
 export const updateProductSchema =
-  z.object({
-    name:
-      nameSchema.optional(),
+  z
+    .object({
+      name:
+        nameSchema
+          .optional(),
 
-    unit:
-      unitSchema.optional(),
+      unit:
+        unitSchema
+          .optional(),
 
-    price:
-      priceSchema.optional(),
+      price:
+        priceSchema
+          .optional(),
 
-    stock:
-      stockSchema.optional(),
+      stock:
+        stockSchema
+          .optional(),
 
-    categorySlug:
-      categorySlugSchema.optional(),
+      categorySlug:
+        categorySlugSchema
+          .optional(),
 
-    subcategoryId:
-      subcategoryIdSchema.optional(),
+      subcategoryId:
+        subcategoryIdSchema
+          .optional(),
 
-    discountPercentage:
-      discountPercentageSchema
-        .optional(),
+      discountPercentage:
+        discountPercentageSchema
+          .optional(),
 
-    description:
-      optionalTextSchema(
-        5000,
-        "Description"
-      ).optional(),
+      description:
+        optionalTextSchema(
+          5000,
+          "Description"
+        ).optional(),
 
-    badge:
-      optionalTextSchema(
-        80,
-        "Badge"
-      ).optional(),
+      badge:
+        optionalTextSchema(
+          80,
+          "Badge"
+        ).optional(),
 
-    deliveryText:
-      optionalTextSchema(
-        160,
-        "Delivery text"
-      ).optional(),
+      deliveryText:
+        optionalTextSchema(
+          160,
+          "Delivery text"
+        ).optional(),
 
-    isBestSeller:
-      multipartBooleanSchema
-        .optional(),
+      isBestSeller:
+        multipartBooleanSchema
+          .optional(),
 
-    isActive:
-      multipartBooleanSchema
-        .optional(),
+      isActive:
+        multipartBooleanSchema
+          .optional(),
 
-    rating:
-      ratingSchema.optional(),
+      rating:
+        ratingSchema
+          .optional(),
 
-    reviewsCount:
-      reviewsCountSchema
-        .optional(),
-  })
+      reviewsCount:
+        reviewsCountSchema
+          .optional(),
+    })
     .strict();
 
-
-
-  /*
+/*
 |--------------------------------------------------------------------------
 | Admin Products Query
 |--------------------------------------------------------------------------
 */
 
 export const adminProductsQuerySchema =
-  z.object({
-    isBestSeller:
-      z.union([
-        z.boolean(),
-        z.literal("true"),
-        z.literal("false"),
-      ])
-        .transform(
-          (value) =>
-            value === true ||
-            value === "true"
-        )
-        .optional(),
-  })
+  z
+    .object({
+      /*
+       * Server-side search.
+       *
+       * Empty search:
+       * ?search=
+       *
+       * بيتعامل كأنه مش موجود.
+       */
+      search:
+        z.preprocess(
+          emptyStringToUndefined,
+          z
+            .string()
+            .trim()
+            .max(
+              160,
+              "Search must not exceed 160 characters"
+            )
+            .optional()
+        ),
+
+      /*
+       * Filter products by main category.
+       */
+      categorySlug:
+        z.preprocess(
+          emptyStringToUndefined,
+          z
+            .string()
+            .trim()
+            .min(
+              1,
+              "Category slug cannot be empty"
+            )
+            .max(
+              140,
+              "Category slug is too long"
+            )
+            .optional()
+        ),
+
+      /*
+       * Useful for Best Sellers page.
+       */
+      isBestSeller:
+        queryBooleanSchema
+          .optional(),
+
+      /*
+       * Useful for active/inactive
+       * product filtering later.
+       */
+      isActive:
+        queryBooleanSchema
+          .optional(),
+    })
     .strict();
+
 /*
 |--------------------------------------------------------------------------
 | Params
@@ -380,19 +474,23 @@ export const adminProductsQuerySchema =
 */
 
 export const productIdParamsSchema =
-  z.object({
-    id: z.uuid(
-      "Invalid product ID"
-    ),
-  })
+  z
+    .object({
+      id:
+        z.uuid(
+          "Invalid product ID"
+        ),
+    })
     .strict();
 
 export const productSlugParamsSchema =
-  z.object({
-    slug:
-      z.string()
-        .trim()
-        .min(1)
-        .max(180),
-  })
+  z
+    .object({
+      slug:
+        z
+          .string()
+          .trim()
+          .min(1)
+          .max(180),
+    })
     .strict();

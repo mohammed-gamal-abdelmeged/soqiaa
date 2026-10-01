@@ -4,6 +4,10 @@ import {
   Routes,
 } from "react-router-dom";
 
+import AdminLoginPage from "../features/auth/pages/AdminLoginPage";
+
+import AdminProtectedRoute from "../features/auth/components/AdminProtectedRoute";
+
 import DashboardPage from "../features/dashboard/pages/DashboardPage";
 import CategoriesPage from "../features/categories/pages/CategoriesPage";
 import CategoryDetailsPage from "../features/categories/pages/CategoryDetailsPage";
@@ -12,15 +16,29 @@ import ProductFormPage from "../features/products/pages/ProductFormPage";
 import OffersPage from "../features/offers/pages/OffersPage";
 import BestSellersPage from "../features/bestSellers/pages/BestSellersPage";
 import OrdersPage from "../features/orders/pages/OrdersPage";
-import AdminLayout from "../layouts/AdminLayout";
 import OrderDetailsPage from "../features/orders/pages/OrderDetailsPage";
 import CustomersPage from "../features/customers/pages/CustomersPage";
+
+import AdminLayout from "../layouts/AdminLayout";
 
 export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<AdminLayout />}>
+        {/* Admin Auth */}
+        <Route
+          path="/login"
+          element={<AdminLoginPage />}
+        />
+
+        {/* Protected Admin Area */}
+        <Route
+          element={
+            <AdminProtectedRoute>
+              <AdminLayout />
+            </AdminProtectedRoute>
+          }
+        >
           <Route
             index
             element={<DashboardPage />}
@@ -64,7 +82,8 @@ export default function AppRouter() {
             path="/best-sellers"
             element={<BestSellersPage />}
           />
-         <Route
+
+          <Route
             path="/orders"
             element={<OrdersPage />}
           />
@@ -73,6 +92,7 @@ export default function AppRouter() {
             path="/orders/:orderId"
             element={<OrderDetailsPage />}
           />
+
           <Route
             path="/customers"
             element={<CustomersPage />}

@@ -1,23 +1,32 @@
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const PHONE_REGEX = /^01[0125][0-9]{8}$/
+const PHONE_REGEX =
+  /^01[0125][0-9]{8}$/
 
-export function validateLogin(formData) {
+export function validateLogin(
+  formData,
+) {
   const errors = {}
 
-  const identifier = formData.identifier.trim()
-  const password = formData.password
+  const phone =
+    formData.phone
+      .trim()
+      .replace(/[\s-]/g, '')
 
-  if (!identifier) {
-    errors.identifier = 'رقم الموبايل أو الإيميل مطلوب'
+  const password =
+    formData.password
+
+  if (!phone) {
+    errors.phone =
+      'رقم الموبايل مطلوب'
   } else if (
-    !EMAIL_REGEX.test(identifier) &&
-    !PHONE_REGEX.test(identifier)
+    !PHONE_REGEX.test(phone)
   ) {
-    errors.identifier = 'أدخل رقم موبايل أو إيميل صحيح'
+    errors.phone =
+      'أدخل رقم موبايل مصري صحيح'
   }
 
   if (!password) {
-    errors.password = 'الباسورد مطلوب'
+    errors.password =
+      'الباسورد مطلوب'
   }
 
   return errors

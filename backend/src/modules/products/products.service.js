@@ -430,12 +430,54 @@ export async function getAdminProducts(
     deletedAt: null,
   };
 
+  /*
+   * Server-side search.
+   */
+  if (filters.search) {
+    where.name = {
+      contains:
+        filters.search,
+
+      mode:
+        "insensitive",
+    };
+  }
+
+  /*
+   * Main Category filter.
+   *
+   * Product -> Subcategory -> Category
+   */
+  if (filters.categorySlug) {
+    where.subcategory = {
+      is: {
+        category: {
+          is: {
+            slug:
+              filters.categorySlug,
+
+            deletedAt:
+              null,
+          },
+        },
+      },
+    };
+  }
+
   if (
     typeof filters.isBestSeller ===
     "boolean"
   ) {
     where.isBestSeller =
       filters.isBestSeller;
+  }
+
+  if (
+    typeof filters.isActive ===
+    "boolean"
+  ) {
+    where.isActive =
+      filters.isActive;
   }
 
   const products =
@@ -1037,4 +1079,84 @@ export async function updateProduct(
 
     throw error;
   }
+}
+
+/*
+|--------------------------------------------------------------------------
+| Delete Product
+|--------------------------------------------------------------------------
+|
+| Hard Delete:
+|
+| المنتج نفسه يتحذف نهائيًا من قاعدة البيانات.
+|
+| علاقات Product في Prisma متظبطة بحيث:
+|
+| Offer / Favorite / CartItem
+| يتم التعامل معها حسب onDelete الموجود في الـSchema.
+|
+| OrderItem يحتفظ ببيانات الطلب التاريخية،
+| و productId يتحول إلى null.
+|--------------------------------------------------------------------------
+*/
+
+export async function deleteProduct(
+  id
+) {
+  const currentProduct =
+    await prisma
+      .product
+      .findFirst({
+        where: {
+          id,
+
+          deletedAt:
+            null,
+        },
+
+        select: {
+          id: true,
+          name: true,
+          imageUrl: true,
+        },
+      });
+
+  if (!currentProduct) {
+    throw new AppError(
+      "Product not found",
+      404,
+      "PRODUCT_NOT_FOUND"
+    );
+  }
+
+  /*
+   * نحذف من DB الأول.
+   *
+   * لو حذف الصورة حصل فيه مشكلة بعد كده،
+   * منخليش ده يرجع المنتج للداتا بيز.
+   */
+  await prisma
+    .product
+    .delete({
+      where: {
+        id:
+          currentProduct.id,
+      },
+    });
+
+  /*
+   * بعد نجاح حذف الداتا،
+   * نمسح الصورة من التخزين.
+   */
+  await safeDeleteImage(
+    currentProduct.imageUrl
+  );
+
+  return {
+    id:
+      currentProduct.id,
+
+    name:
+      currentProduct.name,
+  };
 }

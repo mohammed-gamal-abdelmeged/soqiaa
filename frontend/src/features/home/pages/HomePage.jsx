@@ -1,15 +1,16 @@
-import { ShoppingCart } from "lucide-react";
 import {
   Link,
-  useNavigate,
 } from "react-router-dom";
 
 import logo from "../../../assets/images/logo.png";
 
-import { useCart } from "../../cart/context/useCart";
+import {
+  useProducts,
+} from "../../products/hooks/useProducts";
 
-import { productsMock } from "../../products/data/products.mock";
-import { categoriesMock } from "../../categories/data/categories.mock";
+import {
+  useCategories,
+} from "../../categories/hooks/useCategories";
 
 import HomeCategoryCard from "../components/HomeCategoryCard";
 import HomeProductCard from "../components/HomeProductCard";
@@ -21,30 +22,41 @@ const HERO_IMAGE =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuAWOFK10rXUYspA9yQjw0Zjao0njo5DCEl2gtdPu0zMdHtaz2KqQcbI1emH2vPEuEfGeVNCbmRHCZyYoEKWcJ4OFLHnWLIdjAOxM5fkHrk3cleSgiElkptzyseEncby56L63lB8rArcLxmNRxtWyP-mCVsiiDMSh_lysgAgqdh8sGAaqJ2RydT5s3bKe1bO4LYMYixY14PRF6VyEzmnW5GnF4tbEs6VlARTuDYcAz41GhfHbNb3v7LF";
 
 function HomePage() {
-  const navigate = useNavigate();
+  const {
+    data: products = [],
+    isPending: productsArePending,
+  } = useProducts();
 
-  const { totalItems } = useCart();
+  const {
+    data: categories = [],
+    isPending: categoriesArePending,
+  } = useCategories();
 
-  const offers = productsMock
+  const offers = products
     .filter(
       (product) =>
-        product.isActive &&
         product.discountPercentage > 0,
     )
     .slice(0, 6);
 
-  const bestSellers = productsMock
+  const bestSellers = products
     .filter(
       (product) =>
-        product.isActive &&
         product.isBestSeller,
     )
     .slice(0, 6);
 
+  /*
+   * Public categories endpoint already
+   * returns active categories sorted
+   * by sortOrder.
+   */
   const activeCategories =
-    categoriesMock.filter(
-      (category) => category.isActive,
-    );
+    categories;
+
+  const isLoading =
+    productsArePending ||
+    categoriesArePending;
 
   const scrollToSection = (id) => {
     document
@@ -183,118 +195,135 @@ function HomePage() {
                 </div>
               </div>
             </div>
-
-            {/* Floating Cart */}
-
           </div>
         </section>
 
-        {/* Categories */}
-        <section
-          id="categories"
-          className="pt-10"
-        >
+        {isLoading ? (
           <div
             className="
-              mx-auto w-full
-              max-w-[1180px] px-5
+              flex min-h-[300px]
+              items-center justify-center
             "
           >
-            <SectionHeader
-              kicker="اختار بسرعة"
-              title="تسوق حسب القسم"
-              link="/categories"
+            <span
+              className="
+                h-8 w-8 animate-spin
+                rounded-full border-2
+                border-gray-200
+                border-t-secondary
+              "
             />
-
-            <div
-              className="
-                flex gap-3 overflow-x-auto
-                pb-2 [scrollbar-width:none]
-                [&::-webkit-scrollbar]:hidden
-                md:grid
-                md:grid-cols-6
-                md:overflow-visible
-              "
+          </div>
+        ) : (
+          <>
+            {/* Categories */}
+            <section
+              id="categories"
+              className="pt-10"
             >
-              {activeCategories.map(
-                (category) => (
-                  <HomeCategoryCard
-                    key={category.id}
-                    category={category}
+              <div
+                className="
+                  mx-auto w-full
+                  max-w-[1180px] px-5
+                "
+              >
+                <SectionHeader
+                  kicker="اختار بسرعة"
+                  title="تسوق حسب القسم"
+                  link="/categories"
+                />
+
+                <div
+                  className="
+                    flex gap-3 overflow-x-auto
+                    pb-2 [scrollbar-width:none]
+                    [&::-webkit-scrollbar]:hidden
+                    md:grid
+                    md:grid-cols-6
+                    md:overflow-visible
+                  "
+                >
+                  {activeCategories.map(
+                    (category) => (
+                      <HomeCategoryCard
+                        key={category.id}
+                        category={category}
+                      />
+                    ),
+                  )}
+                </div>
+              </div>
+            </section>
+
+            {/* Offers */}
+            <section
+              id="offers"
+              className="pt-10"
+            >
+              <div
+                className="
+                  mx-auto w-full
+                  max-w-[1180px] px-3
+                  sm:px-5
+                "
+              >
+                <div
+                  className="
+                    rounded-[28px]
+                    border border-[#f0eadb]
+                    bg-[linear-gradient(135deg,#fff8eb_0%,#fffdf7_52%,#f3f9ef_100%)]
+                    py-6
+                  "
+                >
+                  <div className="px-5">
+                    <SectionHeader
+                      kicker="وفر أكتر"
+                      title="عروض سوقيا"
+                      link="/offers"
+                    />
+                  </div>
+
+                  <ProductRail
+                    products={offers}
+                    emptyText="مفيش عروض حاليًا."
                   />
-                ),
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* Offers */}
-        <section
-          id="offers"
-          className="pt-10"
-        >
-          <div
-            className="
-              mx-auto w-full
-              max-w-[1180px] px-3
-              sm:px-5
-            "
-          >
-            <div
-              className="
-                rounded-[28px]
-                border border-[#f0eadb]
-                bg-[linear-gradient(135deg,#fff8eb_0%,#fffdf7_52%,#f3f9ef_100%)]
-                py-6
-              "
-            >
-              <div className="px-5">
-                <SectionHeader
-                  kicker="وفر أكتر"
-                  title="عروض سوقيا"
-                  link="/offers"
-                />
+                </div>
               </div>
+            </section>
 
-              <ProductRail
-                products={offers}
-                emptyText="مفيش عروض حاليًا."
-              />
-            </div>
-          </div>
-        </section>
+            {/* Best Sellers */}
+            <section className="pt-10">
+              <div
+                className="
+                  mx-auto w-full
+                  max-w-[1180px] px-3
+                  sm:px-5
+                "
+              >
+                <div
+                  className="
+                    rounded-[28px]
+                    border border-gray-100
+                    bg-white py-6
+                  "
+                >
+                  <div className="px-5">
+                    <SectionHeader
+                      kicker="اختيارات الناس"
+                      title="الأكثر مبيعًا"
+                      link="/best-sellers"
+                    />
+                  </div>
 
-        {/* Best Sellers */}
-        <section className="pt-10">
-          <div
-            className="
-              mx-auto w-full
-              max-w-[1180px] px-3
-              sm:px-5
-            "
-          >
-            <div
-              className="
-                rounded-[28px]
-                border border-gray-100
-                bg-white py-6
-              "
-            >
-              <div className="px-5">
-                <SectionHeader
-                  kicker="اختيارات الناس"
-                  title="الأكثر مبيعًا"
-                  link="/best-sellers"
-                />
+                  <ProductRail
+                    products={bestSellers}
+                    emptyText="مفيش منتجات مصنفة كأكثر مبيعًا حاليًا."
+                  />
+                </div>
               </div>
-
-              <ProductRail
-                products={bestSellers}
-                emptyText="مفيش منتجات مصنفة كأكثر مبيعًا حاليًا."
-              />
-            </div>
-          </div>
-        </section>
+            </section>
+          </>
+        )}
       </main>
 
       {/* الفوتر في نهاية الصفحة الطبيعية */}
@@ -363,12 +392,14 @@ function ProductRail({
         md:overflow-visible
       "
     >
-      {products.map((product) => (
-        <HomeProductCard
-          key={product.id}
-          product={product}
-        />
-      ))}
+      {products.map(
+        (product) => (
+          <HomeProductCard
+            key={product.id}
+            product={product}
+          />
+        ),
+      )}
     </div>
   );
 }

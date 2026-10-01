@@ -1,31 +1,63 @@
-import { useEffect, useState } from 'react'
-import { useAuth } from '../../auth/context/useAuth'
+import { useEffect } from "react";
+
+import {
+  useMyProfile,
+} from "../../account/hooks/useMyProfile";
 
 function CustomerStep({
   customerData,
   setCustomerData,
 }) {
-  const { user } = useAuth()
+  const {
+    data: user,
+  } = useMyProfile();
 
   useEffect(() => {
-    if (!user) return
+    if (!user) {
+      return;
+    }
 
-    setCustomerData((current) => ({
-      ...current,
-      name: current.name || user.name || '',
-      phone: current.phone || user.phone || '',
-      email: current.email || user.email || '',
-    }))
-  }, [user, setCustomerData])
+    setCustomerData(
+      (current) => ({
+        ...current,
 
-  const handleChange = (event) => {
-    const { name, value } = event.target
+        name:
+          current.name ||
+          user.fullName ||
+          "",
 
-    setCustomerData((current) => ({
-      ...current,
-      [name]: value,
-    }))
-  }
+        phone:
+          current.phone ||
+          user.phone ||
+          "",
+
+        address:
+          current.address ||
+          user.address
+            ?.fullAddress ||
+          "",
+      }),
+    );
+  }, [
+    user,
+    setCustomerData,
+  ]);
+
+  const handleChange = (
+    event,
+  ) => {
+    const {
+      name,
+      value,
+    } = event.target;
+
+    setCustomerData(
+      (current) => ({
+        ...current,
+        [name]: value,
+      }),
+    );
+  };
 
   return (
     <div className="rounded-2xl bg-white p-5 shadow-sm">
@@ -41,9 +73,21 @@ function CustomerStep({
 
           <input
             name="name"
-            value={customerData.name}
-            onChange={handleChange}
-            className="w-full rounded-xl border border-outline p-3 outline-none focus:border-secondary"
+            value={
+              customerData.name
+            }
+            onChange={
+              handleChange
+            }
+            autoComplete="name"
+            className="
+              w-full rounded-xl
+              border border-outline
+              p-3 outline-none
+              focus:border-secondary
+              focus:ring-1
+              focus:ring-secondary
+            "
           />
         </div>
 
@@ -54,22 +98,23 @@ function CustomerStep({
 
           <input
             name="phone"
-            value={customerData.phone}
-            onChange={handleChange}
-            className="w-full rounded-xl border border-outline p-3 outline-none focus:border-secondary"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm text-text-muted">
-            الإيميل
-          </label>
-
-          <input
-            name="email"
-            value={customerData.email}
-            onChange={handleChange}
-            className="w-full rounded-xl border border-outline p-3 outline-none focus:border-secondary"
+            type="tel"
+            inputMode="tel"
+            value={
+              customerData.phone
+            }
+            onChange={
+              handleChange
+            }
+            autoComplete="tel"
+            className="
+              w-full rounded-xl
+              border border-outline
+              p-3 outline-none
+              focus:border-secondary
+              focus:ring-1
+              focus:ring-secondary
+            "
           />
         </div>
 
@@ -80,15 +125,28 @@ function CustomerStep({
 
           <textarea
             name="address"
-            value={customerData.address}
-            onChange={handleChange}
+            value={
+              customerData.address
+            }
+            onChange={
+              handleChange
+            }
+            autoComplete="street-address"
             placeholder="اكتب عنوان التوصيل بالتفصيل"
-            className="h-24 w-full resize-none rounded-xl border border-outline p-3 outline-none focus:border-secondary"
+            className="
+              h-24 w-full resize-none
+              rounded-xl
+              border border-outline
+              p-3 outline-none
+              focus:border-secondary
+              focus:ring-1
+              focus:ring-secondary
+            "
           />
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default CustomerStep
+export default CustomerStep;

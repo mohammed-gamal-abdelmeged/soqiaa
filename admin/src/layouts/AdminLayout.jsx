@@ -1,24 +1,45 @@
 import { useState } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import {
+  Outlet,
+  useNavigate,
+} from "react-router-dom";
 
 import AdminFooter from "../components/layout/AdminFooter";
 import AdminHeader from "../components/layout/AdminHeader";
 import AdminSidebar from "../components/layout/AdminSidebar";
 
+import {
+  useAdminAuth,
+} from "../features/auth/context/useAdminAuth";
+
 export default function AdminLayout() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [
+    isSidebarOpen,
+    setIsSidebarOpen,
+  ] = useState(false);
 
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-  const handleLogout = () => {
-    /*
-      عند ربط Auth الحقيقي:
-      authService.logout()
-      ثم redirect للـfrontend login.
-    */
+  const {
+    logout,
+  } = useAdminAuth();
 
-    navigate("/");
-  };
+  const handleLogout =
+    async () => {
+      try {
+        await logout();
+      } finally {
+        setIsSidebarOpen(false);
+
+        navigate(
+          "/login",
+          {
+            replace: true,
+          },
+        );
+      }
+    };
 
   return (
     <div
@@ -26,12 +47,16 @@ export default function AdminLayout() {
       className="min-h-screen bg-[#f7f8fa] text-slate-900"
     >
       <AdminHeader
-        onOpenSidebar={() => setIsSidebarOpen(true)}
+        onOpenSidebar={() =>
+          setIsSidebarOpen(true)
+        }
       />
 
       <AdminSidebar
         isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
+        onClose={() =>
+          setIsSidebarOpen(false)
+        }
         onLogout={handleLogout}
       />
 

@@ -1,5 +1,11 @@
-import { ImagePlus } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  ImagePlus,
+} from "lucide-react";
+
+import {
+  useEffect,
+  useState,
+} from "react";
 
 import StatusSwitch from "../../../components/ui/StatusSwitch";
 
@@ -9,38 +15,124 @@ export default function CategoryForm({
   onSubmit,
   externalErrors = {},
 }) {
-  const [name, setName] = useState("");
-  const [sortOrder, setSortOrder] = useState("");
-  const [isActive, setIsActive] = useState(true);
+  const [
+    name,
+    setName,
+  ] = useState("");
 
-  const [image, setImage] = useState("");
-  const [imageFile, setImageFile] = useState(null);
+  const [
+    sortOrder,
+    setSortOrder,
+  ] = useState("");
 
-  const [bannerTitle, setBannerTitle] = useState("");
-  const [bannerSubtitle, setBannerSubtitle] = useState("");
+  const [
+    isActive,
+    setIsActive,
+  ] = useState(true);
 
-  const [errors, setErrors] = useState({});
+  /*
+  |--------------------------------------------------------------------------
+  | Category Image
+  |--------------------------------------------------------------------------
+  */
+
+  const [
+    image,
+    setImage,
+  ] = useState("");
+
+  const [
+    imageFile,
+    setImageFile,
+  ] = useState(null);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Banner
+  |--------------------------------------------------------------------------
+  */
+
+  const [
+    bannerImage,
+    setBannerImage,
+  ] = useState("");
+
+  const [
+    bannerImageFile,
+    setBannerImageFile,
+  ] = useState(null);
+
+  const [
+    bannerTitle,
+    setBannerTitle,
+  ] = useState("");
+
+  const [
+    bannerSubtitle,
+    setBannerSubtitle,
+  ] = useState("");
+
+  const [
+    errors,
+    setErrors,
+  ] = useState({});
+
+  /*
+  |--------------------------------------------------------------------------
+  | Initial Data
+  |--------------------------------------------------------------------------
+  */
 
   useEffect(() => {
-    if (mode === "edit" && initialData) {
-      setName(initialData.name ?? "");
+    if (
+      mode === "edit" &&
+      initialData
+    ) {
+      setName(
+        initialData.name ??
+          "",
+      );
 
       setSortOrder(
-        initialData.sortOrder != null
-          ? String(initialData.sortOrder)
+        initialData.sortOrder !=
+          null
+          ? String(
+              initialData.sortOrder,
+            )
           : "",
       );
 
-      setIsActive(initialData.isActive ?? true);
-      setImage(initialData.image ?? "");
-      setImageFile(null);
+      setIsActive(
+        initialData.isActive ??
+          true,
+      );
+
+      setImage(
+        initialData.image ??
+          "",
+      );
+
+      setImageFile(
+        null,
+      );
+
+      setBannerImage(
+        initialData.banner
+          ?.image ?? "",
+      );
+
+      setBannerImageFile(
+        null,
+      );
 
       setBannerTitle(
-        initialData.banner?.title ?? "",
+        initialData.banner
+          ?.title ?? "",
       );
 
       setBannerSubtitle(
-        initialData.banner?.subtitle ?? "",
+        initialData.banner
+          ?.subtitle ?? "",
       );
 
       setErrors({});
@@ -51,56 +143,172 @@ export default function CategoryForm({
     setName("");
     setSortOrder("");
     setIsActive(true);
+
     setImage("");
     setImageFile(null);
+
+    setBannerImage("");
+    setBannerImageFile(null);
 
     setBannerTitle("");
     setBannerSubtitle("");
 
     setErrors({});
-  }, [mode, initialData]);
+  }, [
+    mode,
+    initialData,
+  ]);
 
-  const handleImageChange = (event) => {
-    const file = event.target.files?.[0];
+  /*
+  |--------------------------------------------------------------------------
+  | Category Image
+  |--------------------------------------------------------------------------
+  */
 
-    if (!file) return;
+  function handleImageChange(
+    event,
+  ) {
+    const file =
+      event.target.files?.[0];
 
-    if (!file.type.startsWith("image/")) {
-      setErrors((current) => ({
-        ...current,
-        image: "من فضلك اختر صورة صحيحة",
-      }));
+    if (!file) {
+      return;
+    }
+
+    if (
+      !file.type.startsWith(
+        "image/",
+      )
+    ) {
+      setErrors(
+        (
+          current,
+        ) => ({
+          ...current,
+          image:
+            "من فضلك اختر صورة صحيحة",
+        }),
+      );
 
       return;
     }
 
-    const reader = new FileReader();
+    const reader =
+      new FileReader();
 
     reader.onload = () => {
-      setImage(reader.result);
-      setImageFile(file);
+      setImage(
+        reader.result,
+      );
 
-      setErrors((current) => ({
-        ...current,
-        image: "",
-      }));
+      setImageFile(
+        file,
+      );
+
+      setErrors(
+        (
+          current,
+        ) => ({
+          ...current,
+          image: "",
+        }),
+      );
     };
 
-    reader.readAsDataURL(file);
-  };
+    reader.readAsDataURL(
+      file,
+    );
+  }
 
-  const validate = () => {
-    const nextErrors = {};
+  /*
+  |--------------------------------------------------------------------------
+  | Banner Image
+  |--------------------------------------------------------------------------
+  */
 
-    if (!name.trim()) {
-      nextErrors.name = "اسم القسم مطلوب";
+  function handleBannerImageChange(
+    event,
+  ) {
+    const file =
+      event.target.files?.[0];
+
+    if (!file) {
+      return;
     }
 
-    const parsedSortOrder = Number(sortOrder);
+    if (
+      !file.type.startsWith(
+        "image/",
+      )
+    ) {
+      setErrors(
+        (
+          current,
+        ) => ({
+          ...current,
+          bannerImage:
+            "من فضلك اختر صورة بانر صحيحة",
+        }),
+      );
+
+      return;
+    }
+
+    const reader =
+      new FileReader();
+
+    reader.onload = () => {
+      setBannerImage(
+        reader.result,
+      );
+
+      setBannerImageFile(
+        file,
+      );
+
+      setErrors(
+        (
+          current,
+        ) => ({
+          ...current,
+          bannerImage:
+            "",
+        }),
+      );
+    };
+
+    reader.readAsDataURL(
+      file,
+    );
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Validation
+  |--------------------------------------------------------------------------
+  */
+
+  function validate() {
+    const nextErrors =
+      {};
+
+    if (
+      !name.trim()
+    ) {
+      nextErrors.name =
+        "اسم القسم مطلوب";
+    }
+
+    const parsedSortOrder =
+      Number(
+        sortOrder,
+      );
 
     if (
       !sortOrder ||
-      !Number.isInteger(parsedSortOrder) ||
+      !Number.isInteger(
+        parsedSortOrder,
+      ) ||
       parsedSortOrder < 1
     ) {
       nextErrors.sortOrder =
@@ -108,50 +316,100 @@ export default function CategoryForm({
     }
 
     if (!image) {
-      nextErrors.image = "صورة القسم مطلوبة";
+      nextErrors.image =
+        "صورة القسم مطلوبة";
     }
 
-    if (!bannerTitle.trim()) {
+    /*
+     * في الإضافة صورة البانر مطلوبة.
+     *
+     * في التعديل نقدر نحتفظ
+     * بصورة البانر الحالية.
+     */
+    if (
+      mode === "add" &&
+      !bannerImage
+    ) {
+      nextErrors.bannerImage =
+        "صورة البانر مطلوبة";
+    }
+
+    if (
+      !bannerTitle.trim()
+    ) {
       nextErrors.bannerTitle =
         "عنوان البانر مطلوب";
     }
 
-    if (!bannerSubtitle.trim()) {
+    if (
+      !bannerSubtitle.trim()
+    ) {
       nextErrors.bannerSubtitle =
         "وصف البانر مطلوب";
     }
 
-    setErrors(nextErrors);
+    setErrors(
+      nextErrors,
+    );
 
-    return Object.keys(nextErrors).length === 0;
-  };
+    return (
+      Object.keys(
+        nextErrors,
+      ).length === 0
+    );
+  }
 
-  const handleSubmit = (event) => {
+  /*
+  |--------------------------------------------------------------------------
+  | Submit
+  |--------------------------------------------------------------------------
+  */
+
+  function handleSubmit(
+    event,
+  ) {
     event.preventDefault();
 
-    if (!validate()) return;
+    if (!validate()) {
+      return;
+    }
 
     onSubmit({
-      name: name.trim(),
+      name:
+        name.trim(),
+
       image,
       imageFile,
-      sortOrder: Number(sortOrder),
+
+      bannerImage,
+      bannerImageFile,
+
+      sortOrder:
+        Number(
+          sortOrder,
+        ),
+
       isActive,
 
       banner: {
-        title: bannerTitle.trim(),
-        subtitle: bannerSubtitle.trim(),
+        title:
+          bannerTitle.trim(),
+
+        subtitle:
+          bannerSubtitle.trim(),
       },
     });
-  };
+  }
 
   return (
     <form
       id="category-form"
-      onSubmit={handleSubmit}
+      onSubmit={
+        handleSubmit
+      }
       className="space-y-5 p-5"
     >
-      {/* اسم القسم */}
+      {/* Name */}
       <div>
         <label className="mb-2 block text-sm font-semibold text-slate-700">
           اسم القسم
@@ -159,21 +417,35 @@ export default function CategoryForm({
 
         <input
           type="text"
-          value={name}
-          onChange={(event) => {
-            setName(event.target.value);
+          value={
+            name
+          }
+          onChange={(
+            event,
+          ) => {
+            setName(
+              event.target
+                .value,
+            );
 
-            if (errors.name) {
-              setErrors((current) => ({
-                ...current,
-                name: "",
-              }));
+            if (
+              errors.name
+            ) {
+              setErrors(
+                (
+                  current,
+                ) => ({
+                  ...current,
+                  name: "",
+                }),
+              );
             }
           }}
           placeholder="مثال: المشروبات"
           autoFocus
           className={[
             "h-11 w-full rounded-xl border px-4 text-sm outline-none transition",
+
             errors.name
               ? "border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-100"
               : "border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100",
@@ -182,12 +454,14 @@ export default function CategoryForm({
 
         {errors.name && (
           <p className="mt-1.5 text-xs text-red-600">
-            {errors.name}
+            {
+              errors.name
+            }
           </p>
         )}
       </div>
 
-      {/* صورة القسم */}
+      {/* Category Image */}
       <div>
         <label className="mb-2 block text-sm font-semibold text-slate-700">
           صورة القسم
@@ -196,6 +470,7 @@ export default function CategoryForm({
         <label
           className={[
             "flex cursor-pointer items-center gap-4 rounded-xl border border-dashed p-3 transition hover:bg-slate-50",
+
             errors.image
               ? "border-red-300"
               : "border-slate-300",
@@ -209,38 +484,108 @@ export default function CategoryForm({
             />
           ) : (
             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
-              <ImagePlus size={24} />
+              <ImagePlus
+                size={24}
+              />
             </div>
           )}
 
           <div className="min-w-0">
             <p className="text-sm font-semibold text-slate-700">
               {image
-                ? "تغيير الصورة"
+                ? "تغيير صورة القسم"
                 : "اختر صورة القسم"}
             </p>
 
             <p className="mt-1 text-xs text-slate-400">
-              PNG أو JPG أو WEBP
+              PNG أو JPG أو
+              WEBP
             </p>
           </div>
 
           <input
             type="file"
             accept="image/png,image/jpeg,image/webp"
-            onChange={handleImageChange}
+            onChange={
+              handleImageChange
+            }
             className="hidden"
           />
         </label>
 
         {errors.image && (
           <p className="mt-1.5 text-xs text-red-600">
-            {errors.image}
+            {
+              errors.image
+            }
           </p>
         )}
       </div>
 
-      {/* ترتيب القسم */}
+      {/* Banner Image */}
+      <div>
+        <label className="mb-2 block text-sm font-semibold text-slate-700">
+          صورة البانر
+        </label>
+
+        <label
+          className={[
+            "flex cursor-pointer items-center gap-4 rounded-xl border border-dashed p-3 transition hover:bg-slate-50",
+
+            errors.bannerImage
+              ? "border-red-300"
+              : "border-slate-300",
+          ].join(" ")}
+        >
+          {bannerImage ? (
+            <img
+              src={
+                bannerImage
+              }
+              alt="معاينة صورة البانر"
+              className="h-20 w-32 shrink-0 rounded-xl border border-slate-200 object-cover sm:w-40"
+            />
+          ) : (
+            <div className="flex h-20 w-32 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-400 sm:w-40">
+              <ImagePlus
+                size={26}
+              />
+            </div>
+          )}
+
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-slate-700">
+              {bannerImage
+                ? "تغيير صورة البانر"
+                : "اختر صورة البانر"}
+            </p>
+
+            <p className="mt-1 text-xs leading-5 text-slate-400">
+              صورة عريضة لواجهة
+              القسم
+            </p>
+          </div>
+
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={
+              handleBannerImageChange
+            }
+            className="hidden"
+          />
+        </label>
+
+        {errors.bannerImage && (
+          <p className="mt-1.5 text-xs text-red-600">
+            {
+              errors.bannerImage
+            }
+          </p>
+        )}
+      </div>
+
+      {/* Sort Order */}
       <div>
         <label className="mb-2 block text-sm font-semibold text-slate-700">
           ترتيب القسم
@@ -250,23 +595,36 @@ export default function CategoryForm({
           type="number"
           min="1"
           step="1"
-          value={sortOrder}
-          onChange={(event) => {
-            setSortOrder(event.target.value);
+          value={
+            sortOrder
+          }
+          onChange={(
+            event,
+          ) => {
+            setSortOrder(
+              event.target
+                .value,
+            );
 
             if (
               errors.sortOrder ||
               externalErrors.sortOrder
             ) {
-              setErrors((current) => ({
-                ...current,
-                sortOrder: "",
-              }));
+              setErrors(
+                (
+                  current,
+                ) => ({
+                  ...current,
+                  sortOrder:
+                    "",
+                }),
+              );
             }
           }}
           placeholder="مثال: 1"
           className={[
             "h-11 w-full rounded-xl border px-4 text-sm outline-none transition",
+
             errors.sortOrder ||
             externalErrors.sortOrder
               ? "border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-100"
@@ -283,7 +641,7 @@ export default function CategoryForm({
         )}
       </div>
 
-      {/* عنوان البانر */}
+      {/* Banner Title */}
       <div>
         <label className="mb-2 block text-sm font-semibold text-slate-700">
           عنوان البانر
@@ -291,20 +649,35 @@ export default function CategoryForm({
 
         <input
           type="text"
-          value={bannerTitle}
-          onChange={(event) => {
-            setBannerTitle(event.target.value);
+          value={
+            bannerTitle
+          }
+          onChange={(
+            event,
+          ) => {
+            setBannerTitle(
+              event.target
+                .value,
+            );
 
-            if (errors.bannerTitle) {
-              setErrors((current) => ({
-                ...current,
-                bannerTitle: "",
-              }));
+            if (
+              errors.bannerTitle
+            ) {
+              setErrors(
+                (
+                  current,
+                ) => ({
+                  ...current,
+                  bannerTitle:
+                    "",
+                }),
+              );
             }
           }}
           placeholder="مثال: أساسيات البيت"
           className={[
             "h-11 w-full rounded-xl border px-4 text-sm outline-none transition",
+
             errors.bannerTitle
               ? "border-red-300"
               : "border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100",
@@ -313,33 +686,50 @@ export default function CategoryForm({
 
         {errors.bannerTitle && (
           <p className="mt-1.5 text-xs text-red-600">
-            {errors.bannerTitle}
+            {
+              errors.bannerTitle
+            }
           </p>
         )}
       </div>
 
-      {/* وصف البانر */}
+      {/* Banner Subtitle */}
       <div>
         <label className="mb-2 block text-sm font-semibold text-slate-700">
           وصف البانر
         </label>
 
         <textarea
-          value={bannerSubtitle}
-          onChange={(event) => {
-            setBannerSubtitle(event.target.value);
+          value={
+            bannerSubtitle
+          }
+          onChange={(
+            event,
+          ) => {
+            setBannerSubtitle(
+              event.target
+                .value,
+            );
 
-            if (errors.bannerSubtitle) {
-              setErrors((current) => ({
-                ...current,
-                bannerSubtitle: "",
-              }));
+            if (
+              errors.bannerSubtitle
+            ) {
+              setErrors(
+                (
+                  current,
+                ) => ({
+                  ...current,
+                  bannerSubtitle:
+                    "",
+                }),
+              );
             }
           }}
           placeholder="مثال: كل اللي تحتاجه بأفضل جودة"
           rows={3}
           className={[
             "w-full resize-none rounded-xl border px-4 py-3 text-sm outline-none transition",
+
             errors.bannerSubtitle
               ? "border-red-300"
               : "border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100",
@@ -348,12 +738,14 @@ export default function CategoryForm({
 
         {errors.bannerSubtitle && (
           <p className="mt-1.5 text-xs text-red-600">
-            {errors.bannerSubtitle}
+            {
+              errors.bannerSubtitle
+            }
           </p>
         )}
       </div>
 
-      {/* الحالة */}
+      {/* Status */}
       <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
         <div className="flex items-center justify-between gap-4">
           <div>
@@ -362,13 +754,19 @@ export default function CategoryForm({
             </p>
 
             <p className="mt-1 text-xs text-slate-400">
-              حدد إذا كان القسم ظاهرًا ونشطًا في المتجر
+              حدد إذا كان القسم
+              ظاهرًا ونشطًا في
+              المتجر
             </p>
           </div>
 
           <StatusSwitch
-            checked={isActive}
-            onChange={setIsActive}
+            checked={
+              isActive
+            }
+            onChange={
+              setIsActive
+            }
           />
         </div>
       </div>

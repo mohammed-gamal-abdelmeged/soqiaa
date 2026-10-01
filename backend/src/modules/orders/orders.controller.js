@@ -16,12 +16,12 @@ import {
 
 export async function previewOrderController(
   req,
-  res
+  res,
 ) {
   const preview =
     await previewOrder(
       req.user.id,
-      req.validated.body
+      req.validated.body,
     );
 
   res.status(200).json({
@@ -41,12 +41,12 @@ export async function previewOrderController(
 
 export async function createOrderController(
   req,
-  res
+  res,
 ) {
   const order =
     await createOrder(
       req.user.id,
-      req.validated.body
+      req.validated.body,
     );
 
   res.status(201).json({
@@ -69,11 +69,11 @@ export async function createOrderController(
 
 export async function getUserOrdersController(
   req,
-  res
+  res,
 ) {
   const orders =
     await getUserOrders(
-      req.user.id
+      req.user.id,
     );
 
   res.status(200).json({
@@ -93,12 +93,12 @@ export async function getUserOrdersController(
 
 export async function getUserOrderByIdController(
   req,
-  res
+  res,
 ) {
   const order =
     await getUserOrderById(
       req.user.id,
-      req.validated.params.id
+      req.validated.params.id,
     );
 
   res.status(200).json({
@@ -109,6 +109,7 @@ export async function getUserOrderByIdController(
     },
   });
 }
+
 /*
 |--------------------------------------------------------------------------
 | Admin - Update Order Status
@@ -117,13 +118,13 @@ export async function getUserOrderByIdController(
 
 export async function updateOrderStatusController(
   req,
-  res
+  res,
 ) {
   const order =
     await updateOrderStatus(
       req.user.id,
       req.validated.params.id,
-      req.validated.body
+      req.validated.body,
     );
 
   res.status(200).json({
@@ -137,24 +138,64 @@ export async function updateOrderStatusController(
     },
   });
 }
+
 /*
 |--------------------------------------------------------------------------
 | Admin - Get Orders
+|--------------------------------------------------------------------------
+|
+| Supports:
+|
+| page
+| limit
+| status
+|
+| The temporary Array.isArray compatibility below means this controller
+| keeps working with the current service until we upgrade the service
+| to return pagination metadata in the next step.
 |--------------------------------------------------------------------------
 */
 
 export async function getAdminOrdersController(
   req,
-  res
+  res,
 ) {
+  const result =
+    await getAdminOrders(
+      req.validated.query,
+    );
+
+  /*
+   * Current service:
+   *   returns orders[]
+   *
+   * New paginated service:
+   *   returns {
+   *     orders,
+   *     pagination
+   *   }
+   */
   const orders =
-    await getAdminOrders();
+    Array.isArray(result)
+      ? result
+      : result.orders;
+
+  const pagination =
+    Array.isArray(result)
+      ? null
+      : result.pagination;
 
   res.status(200).json({
     success: true,
 
     data: {
       orders,
+
+      ...(pagination
+        ? {
+            pagination,
+          }
+        : {}),
     },
   });
 }
@@ -167,11 +208,11 @@ export async function getAdminOrdersController(
 
 export async function getAdminOrderByIdController(
   req,
-  res
+  res,
 ) {
   const order =
     await getAdminOrderById(
-      req.validated.params.id
+      req.validated.params.id,
     );
 
   res.status(200).json({

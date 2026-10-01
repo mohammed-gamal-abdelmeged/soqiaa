@@ -1,37 +1,47 @@
 export function normalizeApiError(error) {
-  // السيرفر رد علينا بخطأ
   if (error.response) {
     const status = error.response.status
     const data = error.response.data
 
+    const apiError = data?.error
+
     return {
       status,
 
+      code:
+        apiError?.code ||
+        null,
+
       message:
+        apiError?.message ||
         data?.message ||
         getDefaultErrorMessage(status),
 
       errors:
-        data?.errors || null,
+        apiError?.details ||
+        data?.errors ||
+        null,
 
       data,
     }
   }
 
-  // السيرفر لم يرد أساسًا
   if (error.request) {
     return {
       status: null,
+      code: null,
       message: 'تعذر الاتصال بالسيرفر، حاول مرة أخرى',
       errors: null,
       data: null,
     }
   }
 
-  // خطأ حصل قبل إرسال الـ request
   return {
     status: null,
-    message: error.message || 'حدث خطأ غير متوقع',
+    code: null,
+    message:
+      error.message ||
+      'حدث خطأ غير متوقع',
     errors: null,
     data: null,
   }

@@ -17,6 +17,7 @@ import {
 } from "../orders/orders.controller.js";
 
 import {
+  adminOrdersQuerySchema,
   orderIdParamsSchema,
   updateOrderStatusSchema,
 } from "../orders/orders.validation.js";
@@ -54,7 +55,11 @@ router.get(
 | Admin - Get Orders
 |--------------------------------------------------------------------------
 |
-| Lightweight orders list.
+| Supports:
+|
+| ?page=1
+| ?limit=20
+| ?status=received
 |--------------------------------------------------------------------------
 */
 
@@ -62,16 +67,18 @@ router.get(
   "/orders",
   authenticate,
   authorizeRole("ADMIN"),
+
+  validate(
+    adminOrdersQuerySchema,
+    "query"
+  ),
+
   getAdminOrdersController
 );
 
 /*
 |--------------------------------------------------------------------------
 | Admin - Get Order By ID
-|--------------------------------------------------------------------------
-|
-| Full order details are loaded only
-| when the admin opens the order.
 |--------------------------------------------------------------------------
 */
 

@@ -5,14 +5,24 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 
-import { useNavigate, useParams } from "react-router-dom";
+import {
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 
 import ProductCard from "../components/ProductCard";
-import { categoryDetailsMock } from "../data/categoryDetails.mock";
 import BottomNav from "../../../components/layout/BottomNav";
 import Modal from "../../../components/ui/Modal";
 
 import { useCart } from "../../cart/context/useCart";
+
+import {
+  useCategory,
+} from "../hooks/useCategories";
+
+import {
+  useProducts,
+} from "../../products/hooks/useProducts";
 
 function CategoryProductsPage() {
   const { slug } = useParams();
@@ -20,55 +30,150 @@ function CategoryProductsPage() {
 
   const { totalItems } = useCart();
 
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [sortBy, setSortBy] = useState("default");
+  const [
+    isFilterOpen,
+    setIsFilterOpen,
+  ] = useState(false);
 
-  const category = categoryDetailsMock[slug];
+  const [
+    sortBy,
+    setSortBy,
+  ] = useState("default");
 
-  const [activeSubcategory, setActiveSubcategory] = useState("all");
+  const [
+    activeSubcategory,
+    setActiveSubcategory,
+  ] = useState("all");
+
+  const {
+    data: category,
+    isPending: categoryIsPending,
+    isError: categoryIsError,
+    error: categoryError,
+  } = useCategory(slug);
+
+  const {
+    data: allProducts = [],
+    isPending: productsArePending,
+    isError: productsAreError,
+    error: productsError,
+  } = useProducts();
 
   const products = useMemo(() => {
-    if (!category) return [];
-
     let filteredProducts =
-      activeSubcategory === "all"
-        ? [...category.products]
-        : category.products.filter(
-            (product) => product.subcategoryId === activeSubcategory,
-          );
+      allProducts.filter(
+        (product) =>
+          product.categorySlug ===
+          slug,
+      );
 
-    const getFinalPrice = (product) => {
-      if (!product.discountPercentage) {
+    if (
+      activeSubcategory !==
+      "all"
+    ) {
+      filteredProducts =
+        filteredProducts.filter(
+          (product) =>
+            product.subcategoryId ===
+            activeSubcategory,
+        );
+    }
+
+    const getFinalPrice = (
+      product,
+    ) => {
+      if (
+        !product.discountPercentage
+      ) {
         return product.price;
       }
 
       return (
         product.price -
-        product.price * (product.discountPercentage / 100)
+        product.price *
+          (
+            product.discountPercentage /
+            100
+          )
       );
     };
 
-    if (sortBy === "price-low") {
+    if (
+      sortBy === "price-low"
+    ) {
       filteredProducts.sort(
-        (a, b) => getFinalPrice(a) - getFinalPrice(b),
+        (a, b) =>
+          getFinalPrice(a) -
+          getFinalPrice(b),
       );
     }
 
-    if (sortBy === "price-high") {
+    if (
+      sortBy === "price-high"
+    ) {
       filteredProducts.sort(
-        (a, b) => getFinalPrice(b) - getFinalPrice(a),
+        (a, b) =>
+          getFinalPrice(b) -
+          getFinalPrice(a),
       );
     }
 
     return filteredProducts;
-  }, [category, activeSubcategory, sortBy]);
+  }, [
+    allProducts,
+    slug,
+    activeSubcategory,
+    sortBy,
+  ]);
 
-  if (!category) {
+  if (
+    categoryIsPending ||
+    productsArePending
+  ) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-5">
-        <p className="text-text-muted">
-          القسم غير موجود
-        </p>
+      <div
+        className="
+          flex min-h-screen
+          items-center justify-center
+          bg-[#f8f9fa]
+        "
+      >
+        <span
+          className="
+            h-8 w-8 animate-spin
+            rounded-full border-2
+            border-gray-200
+            border-t-secondary
+          "
+        />
+      </div>
+    );
+  }
+
+  if (
+    categoryIsError ||
+    productsAreError ||
+    !category
+  ) {
+    return (
+      <div
+        className="
+          flex min-h-screen
+          items-center justify-center
+          bg-[#f8f9fa] px-5
+        "
+      >
+        <div className="text-center">
+          <p className="font-semibold text-primary">
+            تعذر تحميل القسم
+          </p>
+
+          <p className="mt-2 text-sm text-text-muted">
+            {categoryError?.message ||
+              productsError?.message ||
+              "القسم غير موجود"}
+          </p>
+        </div>
       </div>
     );
   }
@@ -86,15 +191,20 @@ function CategoryProductsPage() {
       >
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={() =>
+            navigate(-1)
+          }
           aria-label="رجوع"
           className="
-            flex h-10 w-10 items-center justify-center
+            flex h-10 w-10
+            items-center justify-center
             text-secondary transition
             active:scale-90
           "
         >
-          <ArrowRight size={27} />
+          <ArrowRight
+            size={27}
+          />
         </button>
 
         <h1 className="flex-1 text-center text-2xl font-bold">
@@ -104,7 +214,9 @@ function CategoryProductsPage() {
         {/* Cart */}
         <button
           type="button"
-          onClick={() => navigate("/cart")}
+          onClick={() =>
+            navigate("/cart")
+          }
           aria-label={`السلة - ${totalItems} منتج`}
           className="
             relative flex h-10 w-10
@@ -113,19 +225,24 @@ function CategoryProductsPage() {
             active:scale-90
           "
         >
-          <ShoppingCart size={25} />
+          <ShoppingCart
+            size={25}
+          />
 
           {totalItems > 0 && (
             <span
               className="
                 absolute -left-1 -top-1
-                flex h-5 min-w-5 items-center justify-center
+                flex h-5 min-w-5
+                items-center justify-center
                 rounded-full bg-secondary
                 px-1 text-[11px] font-bold
                 leading-none text-white
               "
             >
-              {totalItems > 99 ? "99+" : totalItems}
+              {totalItems > 99
+                ? "99+"
+                : totalItems}
             </span>
           )}
         </button>
@@ -135,23 +252,38 @@ function CategoryProductsPage() {
         {/* Banner */}
         <section className="px-5 pt-4">
           <div className="relative h-32 overflow-hidden rounded-3xl">
-            <img
-              src={category.banner.image}
-              alt={category.banner.title}
-              className="absolute inset-0 h-full w-full object-cover"
-            />
+            {category.banner?.image && (
+              <img
+                src={
+                  category.banner.image
+                }
+                alt={
+                  category.banner.title ||
+                  category.name
+                }
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            )}
 
             <div className="absolute inset-0 bg-gradient-to-l from-[#001b3d]/85 via-[#001b3d]/40 to-transparent" />
 
             <div className="absolute inset-0 flex items-center p-6">
               <div className="text-white">
                 <h2 className="text-xl font-semibold">
-                  {category.banner.title}
+                  {category.banner
+                    ?.title ||
+                    category.name}
                 </h2>
 
-                <p className="mt-1 text-sm opacity-90">
-                  {category.banner.subtitle}
-                </p>
+                {category.banner
+                  ?.subtitle && (
+                  <p className="mt-1 text-sm opacity-90">
+                    {
+                      category.banner
+                        .subtitle
+                    }
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -162,12 +294,18 @@ function CategoryProductsPage() {
           <div className="flex min-w-max gap-3 px-5 pb-2">
             <button
               type="button"
-              onClick={() => setActiveSubcategory("all")}
+              onClick={() =>
+                setActiveSubcategory(
+                  "all",
+                )
+              }
               className={`
-                rounded-full border px-5 py-2 text-sm
+                rounded-full border
+                px-5 py-2 text-sm
                 transition active:scale-95
                 ${
-                  activeSubcategory === "all"
+                  activeSubcategory ===
+                  "all"
                     ? "border-primary bg-primary text-white"
                     : "border-outline bg-white text-text-main"
                 }
@@ -176,26 +314,36 @@ function CategoryProductsPage() {
               الكل
             </button>
 
-            {category.subcategories.map((subcategory) => (
-              <button
-                key={subcategory.id}
-                type="button"
-                onClick={() =>
-                  setActiveSubcategory(subcategory.id)
-                }
-                className={`
-                  rounded-full border px-5 py-2 text-sm
-                  transition active:scale-95
-                  ${
-                    activeSubcategory === subcategory.id
-                      ? "border-primary bg-primary text-white"
-                      : "border-outline bg-white text-text-main"
+            {category.subcategories.map(
+              (subcategory) => (
+                <button
+                  key={
+                    subcategory.id
                   }
-                `}
-              >
-                {subcategory.name}
-              </button>
-            ))}
+                  type="button"
+                  onClick={() =>
+                    setActiveSubcategory(
+                      subcategory.id,
+                    )
+                  }
+                  className={`
+                    rounded-full border
+                    px-5 py-2 text-sm
+                    transition active:scale-95
+                    ${
+                      activeSubcategory ===
+                      subcategory.id
+                        ? "border-primary bg-primary text-white"
+                        : "border-outline bg-white text-text-main"
+                    }
+                  `}
+                >
+                  {
+                    subcategory.name
+                  }
+                </button>
+              ),
+            )}
           </div>
         </section>
 
@@ -207,16 +355,23 @@ function CategoryProductsPage() {
 
           <button
             type="button"
-            onClick={() => setIsFilterOpen(true)}
+            onClick={() =>
+              setIsFilterOpen(
+                true,
+              )
+            }
             className="
-              flex items-center gap-2 rounded-lg
-              border border-outline bg-white
+              flex items-center gap-2
+              rounded-lg border
+              border-outline bg-white
               px-3 py-2 text-sm
-              text-primary
-              transition active:scale-95
+              text-primary transition
+              active:scale-95
             "
           >
-            <SlidersHorizontal size={18} />
+            <SlidersHorizontal
+              size={18}
+            />
             تصفية وترتيب
           </button>
         </section>
@@ -224,12 +379,14 @@ function CategoryProductsPage() {
         {/* Products */}
         {products.length > 0 ? (
           <section className="mt-4 grid grid-cols-2 gap-4 px-5">
-            {products.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-              />
-            ))}
+            {products.map(
+              (product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                />
+              ),
+            )}
           </section>
         ) : (
           <div className="px-5 py-16 text-center text-text-muted">
@@ -243,7 +400,11 @@ function CategoryProductsPage() {
       {/* Filter Modal */}
       <Modal
         isOpen={isFilterOpen}
-        onClose={() => setIsFilterOpen(false)}
+        onClose={() =>
+          setIsFilterOpen(
+            false,
+          )
+        }
         title="تصفية وترتيب"
         maxWidth="max-w-sm"
       >
@@ -251,15 +412,21 @@ function CategoryProductsPage() {
           <button
             type="button"
             onClick={() => {
-              setSortBy("default");
-              setIsFilterOpen(false);
+              setSortBy(
+                "default",
+              );
+
+              setIsFilterOpen(
+                false,
+              );
             }}
             className={`
-              w-full rounded-xl border
-              px-4 py-3 text-right
-              transition
+              w-full rounded-xl
+              border px-4 py-3
+              text-right transition
               ${
-                sortBy === "default"
+                sortBy ===
+                "default"
                   ? "border-secondary bg-green-50 text-secondary"
                   : "border-outline bg-white"
               }
@@ -271,15 +438,21 @@ function CategoryProductsPage() {
           <button
             type="button"
             onClick={() => {
-              setSortBy("price-low");
-              setIsFilterOpen(false);
+              setSortBy(
+                "price-low",
+              );
+
+              setIsFilterOpen(
+                false,
+              );
             }}
             className={`
-              w-full rounded-xl border
-              px-4 py-3 text-right
-              transition
+              w-full rounded-xl
+              border px-4 py-3
+              text-right transition
               ${
-                sortBy === "price-low"
+                sortBy ===
+                "price-low"
                   ? "border-secondary bg-green-50 text-secondary"
                   : "border-outline bg-white"
               }
@@ -291,15 +464,21 @@ function CategoryProductsPage() {
           <button
             type="button"
             onClick={() => {
-              setSortBy("price-high");
-              setIsFilterOpen(false);
+              setSortBy(
+                "price-high",
+              );
+
+              setIsFilterOpen(
+                false,
+              );
             }}
             className={`
-              w-full rounded-xl border
-              px-4 py-3 text-right
-              transition
+              w-full rounded-xl
+              border px-4 py-3
+              text-right transition
               ${
-                sortBy === "price-high"
+                sortBy ===
+                "price-high"
                   ? "border-secondary bg-green-50 text-secondary"
                   : "border-outline bg-white"
               }

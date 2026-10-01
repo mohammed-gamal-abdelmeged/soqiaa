@@ -1,21 +1,25 @@
-import { useCart } from '../../cart/context/useCart'
-
 function ReviewStep({
   customerData,
-  discountPercentage = 0,
-  discountAmount = 0,
-  appliedCoupon = null,
+  preview,
 }) {
+  if (!preview) {
+    return (
+      <div className="py-20 text-center">
+        <p className="text-text-muted">
+          تعذر تحميل مراجعة الطلب
+        </p>
+      </div>
+    );
+  }
+
   const {
-    items,
+    items = [],
     subtotal,
-    getFinalPrice,
-  } = useCart()
-
-  const deliveryFee = 15
-
-  const total =
-    subtotal - discountAmount + deliveryFee
+    discountAmount,
+    deliveryFee,
+    total,
+    couponCode,
+  } = preview;
 
   return (
     <div className="space-y-5">
@@ -27,24 +31,17 @@ function ReviewStep({
 
         <div className="space-y-2 text-sm">
           <p>
-            <strong>الاسم:</strong>{' '}
+            <strong>الاسم:</strong>{" "}
             {customerData.name}
           </p>
 
           <p>
-            <strong>الموبايل:</strong>{' '}
+            <strong>الموبايل:</strong>{" "}
             {customerData.phone}
           </p>
 
-          {customerData.email && (
-            <p>
-              <strong>الإيميل:</strong>{' '}
-              {customerData.email}
-            </p>
-          )}
-
           <p>
-            <strong>العنوان:</strong>{' '}
+            <strong>العنوان:</strong>{" "}
             {customerData.address}
           </p>
         </div>
@@ -57,37 +54,32 @@ function ReviewStep({
         </h2>
 
         <div className="space-y-4">
-          {items.map((item) => {
-            const itemPrice = getFinalPrice(item)
-            const itemTotal =
-              itemPrice * item.quantity
+          {items.map((item) => (
+            <div
+              key={item.id}
+              className="
+                flex justify-between
+                border-b border-gray-100
+                pb-3 last:border-none
+                last:pb-0
+              "
+            >
+              <div>
+                <p className="font-medium">
+                  {item.name}
+                </p>
 
-            return (
-              <div
-                key={item.id}
-                className="
-                  flex justify-between
-                  border-b border-gray-100
-                  pb-3 last:border-none last:pb-0
-                "
-              >
-                <div>
-                  <p className="font-medium">
-                    {item.name}
-                  </p>
-
-                  <p className="mt-1 text-sm text-gray-500">
-                    {item.quantity} ×{' '}
-                    {itemPrice} ج.م
-                  </p>
-                </div>
-
-                <span className="font-semibold">
-                  {itemTotal} ج.م
-                </span>
+                <p className="mt-1 text-sm text-gray-500">
+                  {item.quantity} ×{" "}
+                  {item.finalPrice} ج.م
+                </p>
               </div>
-            )
-          })}
+
+              <span className="font-semibold">
+                {item.lineTotal} ج.م
+              </span>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -107,19 +99,14 @@ function ReviewStep({
           {discountAmount > 0 && (
             <div className="flex justify-between text-secondary">
               <div>
-                <span>الخصم</span>
+                <span>
+                  الخصم
+                </span>
 
-                {discountPercentage > 0 && (
-                  <span>
-                    {' '}
-                    ({discountPercentage}%)
-                  </span>
-                )}
-
-                {appliedCoupon && (
-                  <span className="mr-1 text-xs">
-                    - {appliedCoupon}
-                  </span>
+                {couponCode && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    كود الخصم: {couponCode}
+                  </p>
                 )}
               </div>
 
@@ -157,7 +144,7 @@ function ReviewStep({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default ReviewStep
+export default ReviewStep;

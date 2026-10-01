@@ -1,12 +1,60 @@
-import OrderCard from '../components/OrderCard'
-import { ordersMock } from '../data/orders.mock'
+import OrderCard from "../components/OrderCard";
+
+import {
+  useOrders,
+} from "../hooks/useOrders";
 
 function OrdersPage() {
-  const orders = [...ordersMock].sort(
-    (a, b) =>
-      new Date(b.createdAt) -
-      new Date(a.createdAt),
-  )
+  const {
+    data: orders = [],
+    isPending,
+    isError,
+    error,
+  } = useOrders();
+
+  if (isPending) {
+    return (
+      <div
+        className="
+          flex min-h-[60vh]
+          items-center justify-center
+        "
+      >
+        <span
+          className="
+            h-8 w-8 animate-spin
+            rounded-full border-2
+            border-gray-200
+            border-t-secondary
+          "
+        />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div
+        className="
+          mx-auto flex min-h-[60vh]
+          w-full max-w-md
+          items-center justify-center
+          px-5
+        "
+      >
+        <div className="text-center">
+          <p className="font-semibold text-primary">
+            تعذر تحميل الطلبات
+          </p>
+
+          <p className="mt-2 text-sm text-text-muted">
+            {error?.message ||
+              "حاول مرة أخرى"}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -27,12 +75,14 @@ function OrdersPage() {
 
       {orders.length > 0 ? (
         <section className="space-y-4">
-          {orders.map((order) => (
-            <OrderCard
-              key={order.id}
-              order={order}
-            />
-          ))}
+          {orders.map(
+            (order) => (
+              <OrderCard
+                key={order.id}
+                order={order}
+              />
+            ),
+          )}
         </section>
       ) : (
         <div className="py-20 text-center">
@@ -46,7 +96,7 @@ function OrdersPage() {
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export default OrdersPage
+export default OrdersPage;

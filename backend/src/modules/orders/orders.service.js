@@ -1795,48 +1795,146 @@ export async function updateOrderStatus(
 |--------------------------------------------------------------------------
 */
 
-export async function getAdminOrders() {
-  const orders =
-    await prisma.order.findMany({
-      orderBy: {
-        createdAt: "desc",
-      },
+export async function getAdminOrders(
+  {
+    page = 1,
+    limit = 20,
+    status,
+    search,
+  } = {},
+) {
+  const normalizedSearch =
+    search?.trim();
 
-      take:
-        USER_ORDERS_LIMIT,
+  const where = {
+    ...(status
+      ? {
+          status,
+        }
+      : {}),
 
-      select:
-        ADMIN_ORDER_LIST_SELECT,
-    });
+    ...(normalizedSearch
+      ? {
+          OR: [
+            {
+              orderNumber: {
+                contains:
+                  normalizedSearch,
 
-  return orders.map(
-    (order) => ({
-      id:
-        order.id,
+                mode:
+                  "insensitive",
+              },
+            },
 
-      orderNumber:
-        order.orderNumber,
+            {
+              customerName: {
+                contains:
+                  normalizedSearch,
 
-      status:
-        order.status.toLowerCase(),
+                mode:
+                  "insensitive",
+              },
+            },
 
-      customer: {
-        name:
-          order.customerName,
-      },
+            {
+              customerPhone: {
+                contains:
+                  normalizedSearch,
+              },
+            },
+          ],
+        }
+      : {}),
+  };
 
-      total:
-        Number(
-          order.total
-        ),
+  const skip =
+    (page - 1) * limit;
 
-      createdAt:
-        order.createdAt,
+  const [
+    total,
+    orders,
+  ] =
+    await prisma.$transaction([
+      prisma.order.count({
+        where,
+      }),
 
-      itemsCount:
-        order._count.items,
-    })
-  );
+      prisma.order.findMany({
+        where,
+
+        orderBy: [
+          {
+            createdAt:
+              "desc",
+          },
+          {
+            id:
+              "desc",
+          },
+        ],
+
+        skip,
+
+        take:
+          limit,
+
+        select:
+          ADMIN_ORDER_LIST_SELECT,
+      }),
+    ]);
+
+  const totalPages =
+    Math.max(
+      1,
+      Math.ceil(
+        total / limit,
+      ),
+    );
+
+  return {
+    orders:
+      orders.map(
+        (order) => ({
+          id:
+            order.id,
+
+          orderNumber:
+            order.orderNumber,
+
+          status:
+            order.status.toLowerCase(),
+
+          customer: {
+            name:
+              order.customerName,
+          },
+
+          total:
+            Number(
+              order.total,
+            ),
+
+          createdAt:
+            order.createdAt,
+
+          itemsCount:
+            order._count.items,
+        }),
+      ),
+
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+
+      hasNextPage:
+        page < totalPages,
+
+      hasPreviousPage:
+        page > 1,
+    },
+  };
 }
 
 /*

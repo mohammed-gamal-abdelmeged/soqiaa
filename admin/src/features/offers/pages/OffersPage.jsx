@@ -1,50 +1,199 @@
-// src/features/offers/pages/OffersPage.jsx
-
 import {
   useMemo,
   useState,
 } from "react";
 
+import {
+  useQueries,
+} from "@tanstack/react-query";
+
 import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import Modal from "../../../components/ui/Modal";
 import { appToast } from "../../../lib/toast";
+
+import {
+  getAdminCategory,
+} from "../../../services/categories.service";
+
+import {
+  cacheTimes,
+} from "../../../lib/cacheTimes";
 
 import OfferForm from "../components/OfferForm";
 import OfferMobileCard from "../components/OfferMobileCard";
 import OffersTable from "../components/OffersTable";
 import OffersToolbar from "../components/OffersToolbar";
 
-import { categoriesMock } from "../../categories/data/categories.mock";
-import { categoryDetailsMock } from "../../categories/data/categoryDetails.mock";
-import { productsMock } from "../../products/data/products.mock";
+import {
+  useAdminCategories,
+} from "../../categories/hooks/useAdminCategories";
 
 import {
-  createOffersFromProducts,
+  useAdminProducts,
+} from "../../products/hooks/useAdminProducts";
+
+import {
+  useAdminOffers,
+  useCreateAdminOffer,
+  useUpdateAdminOffer,
+  useDeleteAdminOffer,
+} from "../hooks/useAdminOffers";
+
+import {
   filterOffersByStatus,
 } from "../utils/offers";
 
 export default function OffersPage() {
   /*
-    Initial offers come ONLY from
-    products that already have discountPercentage.
+  |--------------------------------------------------------------------------
+  | Queries
+  |--------------------------------------------------------------------------
   */
 
-  const [offers, setOffers] =
-    useState(() =>
-      createOffersFromProducts(
-        productsMock,
-      ),
+  const {
+    data: offers = [],
+    isLoading:
+      isOffersLoading,
+    isError:
+      isOffersError,
+    error:
+      offersError,
+  } = useAdminOffers();
+
+  const {
+    data: categories = [],
+    isLoading:
+      isCategoriesLoading,
+    isError:
+      isCategoriesError,
+    error:
+      categoriesError,
+  } = useAdminCategories();
+
+  const {
+    data: products = [],
+    isLoading:
+      isProductsLoading,
+    isError:
+      isProductsError,
+    error:
+      productsError,
+  } = useAdminProducts();
+
+  /*
+  |--------------------------------------------------------------------------
+  | Category Details
+  |--------------------------------------------------------------------------
+  |
+  | الـOfferForm محتاج subcategories حسب القسم.
+  |
+  | بدل categoryDetailsMock:
+  | نجيب تفاصيل كل Category من الـBackend.
+  |--------------------------------------------------------------------------
+  */
+
+  const categoryDetailQueries =
+    useQueries({
+      queries:
+        categories.map(
+          (category) => ({
+            queryKey: [
+              "admin",
+              "categories",
+              "detail",
+              category.slug,
+            ],
+
+            queryFn: () =>
+              getAdminCategory(
+                category.slug,
+              ),
+
+            enabled:
+              Boolean(
+                category.slug,
+              ),
+
+            staleTime:
+              cacheTimes.categories,
+          }),
+        ),
+    });
+
+  const categoryDetails =
+    useMemo(() => {
+      const details = {};
+
+      categoryDetailQueries.forEach(
+        (
+          query,
+          index,
+        ) => {
+          const category =
+            categories[index];
+
+          if (
+            !category?.slug ||
+            !query.data
+          ) {
+            return;
+          }
+
+          details[
+            category.slug
+          ] = query.data;
+        },
+      );
+
+      return details;
+    }, [
+      categories,
+      categoryDetailQueries,
+    ]);
+
+  const isCategoryDetailsLoading =
+    categoryDetailQueries.some(
+      (query) =>
+        query.isLoading,
     );
 
-  const [status, setStatus] =
-    useState("all");
+  const categoryDetailsError =
+    categoryDetailQueries.find(
+      (query) =>
+        query.isError,
+    )?.error;
 
-  const [formModal, setFormModal] =
-    useState({
-      isOpen: false,
-      mode: "add",
-      offer: null,
-    });
+  /*
+  |--------------------------------------------------------------------------
+  | Filters
+  |--------------------------------------------------------------------------
+  */
+
+  const [
+    status,
+    setStatus,
+  ] = useState("all");
+
+  /*
+  |--------------------------------------------------------------------------
+  | Add / Edit Modal
+  |--------------------------------------------------------------------------
+  */
+
+  const [
+    formModal,
+    setFormModal,
+  ] = useState({
+    isOpen: false,
+    mode: "add",
+    offer: null,
+  });
+
+  /*
+  |--------------------------------------------------------------------------
+  | Delete Modal
+  |--------------------------------------------------------------------------
+  */
 
   const [
     deleteModal,
@@ -54,6 +203,27 @@ export default function OffersPage() {
     offer: null,
   });
 
+  /*
+  |--------------------------------------------------------------------------
+  | Mutations
+  |--------------------------------------------------------------------------
+  */
+
+  const createOfferMutation =
+    useCreateAdminOffer();
+
+  const updateOfferMutation =
+    useUpdateAdminOffer();
+
+  const deleteOfferMutation =
+    useDeleteAdminOffer();
+
+  /*
+  |--------------------------------------------------------------------------
+  | Derived Data
+  |--------------------------------------------------------------------------
+  */
+
   const filteredOffers =
     useMemo(
       () =>
@@ -61,8 +231,18 @@ export default function OffersPage() {
           offers,
           status,
         ),
-      [offers, status],
+      [
+        offers,
+        status,
+      ],
     );
+
+  /*
+   * المنتجات التي عليها Offer بالفعل.
+   *
+   * المنتج الواحد لا يمكن أن يكون
+   * عليه أكثر من Offer.
+   */
 
   const usedProductIds =
     useMemo(
@@ -75,235 +255,408 @@ export default function OffersPage() {
     );
 
   /*
-    ===================================
-    ADD
-    ===================================
+  |--------------------------------------------------------------------------
+  | Add
+  |--------------------------------------------------------------------------
   */
 
-  const handleOpenAdd = () => {
-    setFormModal({
-      isOpen: true,
-      mode: "add",
-      offer: null,
-    });
-  };
+  const handleOpenAdd =
+    () => {
+      setFormModal({
+        isOpen: true,
+        mode: "add",
+        offer: null,
+      });
+    };
 
   /*
-    ===================================
-    EDIT
-    ===================================
+  |--------------------------------------------------------------------------
+  | Edit
+  |--------------------------------------------------------------------------
   */
 
-  const handleOpenEdit = (
-    offer,
-  ) => {
-    setFormModal({
-      isOpen: true,
-      mode: "edit",
-      offer,
-    });
-  };
-
-  const handleCloseForm = () => {
-    setFormModal({
-      isOpen: false,
-      mode: "add",
-      offer: null,
-    });
-  };
+  const handleOpenEdit =
+    (offer) => {
+      setFormModal({
+        isOpen: true,
+        mode: "edit",
+        offer,
+      });
+    };
 
   /*
-    ===================================
-    SUBMIT
-    ===================================
+  |--------------------------------------------------------------------------
+  | Close Form
+  |--------------------------------------------------------------------------
   */
 
-  const handleSubmitOffer = ({
-    productId,
-    discountPercentage,
-    isActive,
-  }) => {
-    /*
-      ADD
-    */
-
-    if (
-      formModal.mode === "add"
-    ) {
-      const product =
-        productsMock.find(
-          (item) =>
-            item.id === productId,
-        );
-
-      if (!product) return;
-
-      /*
-        One product = one offer,
-        because product model only contains
-        one discountPercentage.
-      */
-
-      const alreadyExists =
-        offers.some(
-          (offer) =>
-            offer.productId ===
-            productId,
-        );
-
-      if (alreadyExists) {
-        appToast.error(
-          `المنتج ${product.name} عليه عرض بالفعل`,
-        );
-
+  const handleCloseForm =
+    () => {
+      if (
+        createOfferMutation.isPending ||
+        updateOfferMutation.isPending
+      ) {
         return;
       }
 
-      const newOffer = {
-        id: Date.now(),
-        productId,
-        discountPercentage,
-        isActive,
-      };
+      setFormModal({
+        isOpen: false,
+        mode: "add",
+        offer: null,
+      });
+    };
 
-      setOffers((current) => [
-        ...current,
-        newOffer,
-      ]);
+  /*
+  |--------------------------------------------------------------------------
+  | Submit
+  |--------------------------------------------------------------------------
+  */
 
-      appToast.success(
-        `تم إضافة عرض على منتج ${product.name}`,
-      );
+  const handleSubmitOffer =
+    async ({
+      productId,
+      discountPercentage,
+      isActive,
+    }) => {
+      try {
+        /*
+        |----------------------------------------------------------------------
+        | Add
+        |----------------------------------------------------------------------
+        */
 
-      handleCloseForm();
+        if (
+          formModal.mode ===
+          "add"
+        ) {
+          const product =
+            products.find(
+              (item) =>
+                String(
+                  item.id,
+                ) ===
+                String(
+                  productId,
+                ),
+            );
 
-      return;
-    }
+          if (!product) {
+            appToast.error(
+              "المنتج غير موجود",
+            );
 
-    /*
-      EDIT
-    */
+            return;
+          }
 
-    const editedOffer =
-      formModal.offer;
-
-    if (!editedOffer) return;
-
-    const product =
-      productsMock.find(
-        (item) =>
-          item.id === productId,
-      );
-
-    if (!product) return;
-
-    /*
-      If product changed during edit,
-      don't allow using product that
-      already belongs to another offer.
-    */
-
-    const productUsedByAnotherOffer =
-      offers.some(
-        (offer) =>
-          offer.id !==
-            editedOffer.id &&
-          offer.productId ===
-            productId,
-      );
-
-    if (
-      productUsedByAnotherOffer
-    ) {
-      appToast.error(
-        `المنتج ${product.name} عليه عرض بالفعل`,
-      );
-
-      return;
-    }
-
-    setOffers((current) =>
-      current.map((offer) =>
-        offer.id ===
-        editedOffer.id
-          ? {
-              ...offer,
+          await createOfferMutation.mutateAsync(
+            {
               productId,
               discountPercentage,
               isActive,
-            }
-          : offer,
-      ),
-    );
+            },
+          );
 
-    appToast.success(
-      `تم تعديل عرض منتج ${product.name}`,
-    );
+          appToast.success(
+            `تم إضافة عرض على منتج ${product.name}`,
+          );
+        }
 
-    handleCloseForm();
-  };
+        /*
+        |----------------------------------------------------------------------
+        | Edit
+        |----------------------------------------------------------------------
+        */
+
+        else {
+          const offer =
+            formModal.offer;
+
+          if (!offer) {
+            return;
+          }
+
+          const product =
+            products.find(
+              (item) =>
+                String(
+                  item.id,
+                ) ===
+                String(
+                  productId,
+                ),
+            );
+
+          if (!product) {
+            appToast.error(
+              "المنتج غير موجود",
+            );
+
+            return;
+          }
+
+          await updateOfferMutation.mutateAsync(
+            {
+              offerId:
+                offer.id,
+
+              productId,
+
+              discountPercentage,
+
+              isActive,
+            },
+          );
+
+          appToast.success(
+            `تم تعديل عرض منتج ${product.name}`,
+          );
+        }
+
+        setFormModal({
+          isOpen: false,
+          mode: "add",
+          offer: null,
+        });
+      } catch (error) {
+        const errorCode =
+          error?.response
+            ?.data
+            ?.error
+            ?.code;
+
+        /*
+        |----------------------------------------------------------------------
+        | Offer Already Exists
+        |----------------------------------------------------------------------
+        */
+
+        if (
+          errorCode ===
+          "OFFER_ALREADY_EXISTS"
+        ) {
+          appToast.error(
+            "المنتج عليه عرض بالفعل",
+          );
+
+          return;
+        }
+
+        /*
+        |----------------------------------------------------------------------
+        | Product Not Found
+        |----------------------------------------------------------------------
+        */
+
+        if (
+          errorCode ===
+          "PRODUCT_NOT_FOUND"
+        ) {
+          appToast.error(
+            "المنتج غير موجود",
+          );
+
+          return;
+        }
+
+        /*
+        |----------------------------------------------------------------------
+        | Offer Not Found
+        |----------------------------------------------------------------------
+        */
+
+        if (
+          errorCode ===
+          "OFFER_NOT_FOUND"
+        ) {
+          appToast.error(
+            "العرض غير موجود أو تم حذفه بالفعل",
+          );
+
+          setFormModal({
+            isOpen: false,
+            mode: "add",
+            offer: null,
+          });
+
+          return;
+        }
+
+        appToast.error(
+          "تعذر حفظ العرض، حاول مرة أخرى",
+        );
+      }
+    };
 
   /*
-    ===================================
-    DELETE
-    ===================================
+  |--------------------------------------------------------------------------
+  | Delete
+  |--------------------------------------------------------------------------
   */
 
-  const handleOpenDelete = (
-    offer,
-  ) => {
-    setDeleteModal({
-      isOpen: true,
-      offer,
-    });
-  };
+  const handleOpenDelete =
+    (offer) => {
+      setDeleteModal({
+        isOpen: true,
+        offer,
+      });
+    };
 
-  const handleCloseDelete = () => {
-    setDeleteModal({
-      isOpen: false,
-      offer: null,
-    });
-  };
+  const handleCloseDelete =
+    () => {
+      if (
+        deleteOfferMutation.isPending
+      ) {
+        return;
+      }
+
+      setDeleteModal({
+        isOpen: false,
+        offer: null,
+      });
+    };
 
   const handleConfirmDelete =
-    () => {
+    async () => {
       const offer =
         deleteModal.offer;
 
-      if (!offer) return;
+      if (
+        !offer ||
+        deleteOfferMutation.isPending
+      ) {
+        return;
+      }
 
-      const product =
-        productsMock.find(
-          (item) =>
-            item.id ===
-            offer.productId,
+      try {
+        await deleteOfferMutation.mutateAsync(
+          offer.id,
         );
 
-      setOffers((current) =>
-        current.filter(
-          (item) =>
-            item.id !== offer.id,
-        ),
-      );
+        const product =
+          products.find(
+            (item) =>
+              String(
+                item.id,
+              ) ===
+              String(
+                offer.productId,
+              ),
+          );
 
-      appToast.success(
-        product
-          ? `تم حذف عرض منتج ${product.name}`
-          : "تم حذف العرض",
-      );
+        appToast.success(
+          product
+            ? `تم حذف عرض منتج ${product.name}`
+            : "تم حذف العرض",
+        );
 
-      handleCloseDelete();
+        setDeleteModal({
+          isOpen: false,
+          offer: null,
+        });
+      } catch (error) {
+        const errorCode =
+          error?.response
+            ?.data
+            ?.error
+            ?.code;
+
+        if (
+          errorCode ===
+          "OFFER_NOT_FOUND"
+        ) {
+          appToast.error(
+            "العرض غير موجود أو تم حذفه بالفعل",
+          );
+
+          setDeleteModal({
+            isOpen: false,
+            offer: null,
+          });
+
+          return;
+        }
+
+        appToast.error(
+          "تعذر حذف العرض، حاول مرة أخرى",
+        );
+      }
     };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Current Delete Product
+  |--------------------------------------------------------------------------
+  */
 
   const deleteProduct =
     deleteModal.offer
-      ? productsMock.find(
+      ? products.find(
           (product) =>
-            product.id ===
-            deleteModal.offer
-              .productId,
+            String(
+              product.id,
+            ) ===
+            String(
+              deleteModal
+                .offer
+                .productId,
+            ),
         )
       : null;
+
+  /*
+  |--------------------------------------------------------------------------
+  | Loading
+  |--------------------------------------------------------------------------
+  */
+
+  const isLoading =
+    isOffersLoading ||
+    isProductsLoading ||
+    isCategoriesLoading ||
+    isCategoryDetailsLoading;
+
+  /*
+  |--------------------------------------------------------------------------
+  | Error
+  |--------------------------------------------------------------------------
+  */
+
+  const isError =
+    isOffersError ||
+    isProductsError ||
+    isCategoriesError ||
+    categoryDetailQueries.some(
+      (query) =>
+        query.isError,
+    );
+
+  const errorMessage =
+    offersError
+      ?.response
+      ?.data
+      ?.error
+      ?.message ||
+    productsError
+      ?.response
+      ?.data
+      ?.error
+      ?.message ||
+    categoriesError
+      ?.response
+      ?.data
+      ?.error
+      ?.message ||
+    categoryDetailsError
+      ?.response
+      ?.data
+      ?.error
+      ?.message;
+
+  /*
+  |--------------------------------------------------------------------------
+  | Render
+  |--------------------------------------------------------------------------
+  */
 
   return (
     <>
@@ -333,17 +686,37 @@ export default function OffersPage() {
           }
         />
 
-        {/* Content */}
+        {/* Loading */}
 
-        {filteredOffers.length >
-        0 ? (
+        {isLoading ? (
+          <div className="rounded-2xl border border-slate-200 bg-white px-6 py-14 text-center">
+            <p className="text-sm font-semibold text-slate-500">
+              جاري تحميل العروض...
+            </p>
+          </div>
+        ) : isError ? (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-6 py-14 text-center">
+            <p className="text-sm font-semibold text-red-700">
+              تعذر تحميل العروض
+            </p>
+
+            {errorMessage ? (
+              <p className="mt-2 text-xs text-red-500">
+                {errorMessage}
+              </p>
+            ) : null}
+          </div>
+        ) : filteredOffers.length >
+          0 ? (
           <>
+            {/* Desktop */}
+
             <OffersTable
               offers={
                 filteredOffers
               }
               products={
-                productsMock
+                products
               }
               onEdit={
                 handleOpenEdit
@@ -353,6 +726,8 @@ export default function OffersPage() {
               }
             />
 
+            {/* Mobile */}
+
             <div className="space-y-3 md:hidden">
               {filteredOffers.map(
                 (offer) => (
@@ -361,10 +736,16 @@ export default function OffersPage() {
                       offer.id
                     }
                     offer={offer}
-                    product={productsMock.find(
-                      (product) =>
-                        product.id ===
-                        offer.productId,
+                    product={products.find(
+                      (
+                        product,
+                      ) =>
+                        String(
+                          product.id,
+                        ) ===
+                        String(
+                          offer.productId,
+                        ),
                     )}
                     onEdit={
                       handleOpenEdit
@@ -391,9 +772,7 @@ export default function OffersPage() {
         )}
       </div>
 
-      {/* =================================
-          ADD / EDIT MODAL
-      ================================= */}
+      {/* Add / Edit Modal */}
 
       <Modal
         isOpen={
@@ -422,7 +801,11 @@ export default function OffersPage() {
               onClick={
                 handleCloseForm
               }
-              className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              disabled={
+                createOfferMutation.isPending ||
+                updateOfferMutation.isPending
+              }
+              className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               إلغاء
             </button>
@@ -430,12 +813,19 @@ export default function OffersPage() {
             <button
               type="submit"
               form="offer-form"
-              className="h-11 rounded-xl bg-emerald-700 px-5 text-sm font-semibold text-white transition hover:bg-emerald-800"
+              disabled={
+                createOfferMutation.isPending ||
+                updateOfferMutation.isPending
+              }
+              className="h-11 rounded-xl bg-emerald-700 px-5 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {formModal.mode ===
-              "edit"
-                ? "حفظ التعديلات"
-                : "إضافة العرض"}
+              {createOfferMutation.isPending ||
+              updateOfferMutation.isPending
+                ? "جاري الحفظ..."
+                : formModal.mode ===
+                    "edit"
+                  ? "حفظ التعديلات"
+                  : "إضافة العرض"}
             </button>
           </div>
         }
@@ -448,13 +838,13 @@ export default function OffersPage() {
             formModal.offer
           }
           categories={
-            categoriesMock
+            categories
           }
           categoryDetails={
-            categoryDetailsMock
+            categoryDetails
           }
           products={
-            productsMock
+            products
           }
           usedProductIds={
             usedProductIds
@@ -465,9 +855,7 @@ export default function OffersPage() {
         />
       </Modal>
 
-      {/* =================================
-          DELETE
-      ================================= */}
+      {/* Delete */}
 
       <ConfirmDialog
         isOpen={
@@ -479,7 +867,11 @@ export default function OffersPage() {
             ? `هل تريد حذف العرض الموجود على المنتج "${deleteProduct.name}"؟`
             : "هل تريد حذف هذا العرض؟"
         }
-        confirmText="نعم، حذف العرض"
+        confirmText={
+          deleteOfferMutation.isPending
+            ? "جاري الحذف..."
+            : "نعم، حذف العرض"
+        }
         cancelText="إلغاء"
         variant="danger"
         onClose={

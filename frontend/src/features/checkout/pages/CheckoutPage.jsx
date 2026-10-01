@@ -1,114 +1,283 @@
-// CheckoutPage.jsx
+import { useState } from "react";
 
-import { useState } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
   Check,
   Printer,
-} from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+} from "lucide-react";
 
-import CheckoutStepper from '../components/CheckoutStepper'
-import CartStep from '../components/CartStep'
-import CustomerStep from '../components/CustomerStep'
-import ReviewStep from '../components/ReviewStep'
-import Invoice from '../components/Invoice'
+import {
+  useNavigate,
+} from "react-router-dom";
 
-import { useCart } from '../../cart/context/useCart'
-import Modal from '../../../components/ui/Modal'
-import { showSuccess } from '../../../lib/toast'
+import CheckoutStepper from "../components/CheckoutStepper";
+import CartStep from "../components/CartStep";
+import CustomerStep from "../components/CustomerStep";
+import ReviewStep from "../components/ReviewStep";
+import Invoice from "../components/Invoice";
+
+import {
+  useCart,
+} from "../../cart/context/useCart";
+
+import {
+  useCreateOrder,
+  usePreviewOrder,
+} from "../../orders/hooks/useOrders";
+
+import Modal from "../../../components/ui/Modal";
+
+import {
+  showError,
+  showSuccess,
+} from "../../../lib/toast";
 
 function CheckoutPage() {
-  const navigate = useNavigate()
+  const navigate =
+    useNavigate();
 
   const {
     items,
-    subtotal,
-    getFinalPrice,
-    clearCart,
-  } = useCart()
+  } = useCart();
 
-  const [currentStep, setCurrentStep] = useState(1)
-  const [isSuccessOpen, setIsSuccessOpen] = useState(false)
+  const previewOrderMutation =
+    usePreviewOrder();
 
-  // الخصم هنا بدل CartStep
-  const [discountPercentage, setDiscountPercentage] = useState(0)
-  const [appliedCoupon, setAppliedCoupon] = useState(null)
+  const createOrderMutation =
+    useCreateOrder();
 
-  const [customerData, setCustomerData] = useState({
-    name: '',
-    phone: '',
-    email: '',
-    address: '',
-  })
+  const [
+    currentStep,
+    setCurrentStep,
+  ] = useState(1);
 
-  const deliveryFee = 15
+  const [
+    isSuccessOpen,
+    setIsSuccessOpen,
+  ] = useState(false);
 
-  const discountAmount = Math.round(
-    subtotal * (discountPercentage / 100),
-  )
+  const [
+    appliedCoupon,
+    setAppliedCoupon,
+  ] = useState(null);
 
-  const total =
-    subtotal - discountAmount + deliveryFee
+  const [
+    checkoutPreview,
+    setCheckoutPreview,
+  ] = useState(null);
 
-  const orderNumber =
-    `SQ${Date.now().toString().slice(-6)}`
+  const [
+    completedOrder,
+    setCompletedOrder,
+  ] = useState(null);
 
-  const goNext = () => {
-    if (currentStep === 1 && items.length === 0) {
-      return
-    }
+  const [
+    customerData,
+    setCustomerData,
+  ] = useState({
+    name: "",
+    phone: "",
+    address: "",
+  });
 
-    if (currentStep === 2) {
+  const goNext =
+    async () => {
       if (
-        !customerData.name ||
-        !customerData.phone ||
-        !customerData.address
+        currentStep === 1 &&
+        items.length === 0
       ) {
-        return
+        return;
       }
-    }
 
-    if (currentStep < 3) {
-      setCurrentStep((current) => current + 1)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    }
-  }
+      if (
+        currentStep === 1
+      ) {
+        setCurrentStep(2);
+
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth",
+        });
+
+        return;
+      }
+
+      if (
+        currentStep === 2
+      ) {
+        const name =
+          customerData.name.trim();
+
+        const phone =
+          customerData.phone.trim();
+
+        const address =
+          customerData.address.trim();
+
+        if (
+          !name ||
+          !phone ||
+          !address
+        ) {
+          showError(
+            "من فضلك أكمل بيانات التوصيل",
+          );
+
+          return;
+        }
+
+        try {
+          const preview =
+            await previewOrderMutation
+              .mutateAsync({
+                couponCode:
+                  appliedCoupon ||
+                  undefined,
+              });
+
+          setCheckoutPreview(
+            preview,
+          );
+
+          setAppliedCoupon(
+            preview.couponCode ||
+              null,
+          );
+
+          setCurrentStep(3);
+
+          window.scrollTo({
+            top: 0,
+            behavior: "smooth",
+          });
+        } catch (error) {
+          showError(
+            error?.message ||
+              "تعذر مراجعة الطلب",
+          );
+        }
+      }
+    };
 
   const goBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep((current) => current - 1)
-      return
+    if (
+      currentStep > 1
+    ) {
+      setCurrentStep(
+        (current) =>
+          current - 1,
+      );
+
+      return;
     }
 
-    navigate(-1)
-  }
+    navigate(-1);
+  };
 
-  const confirmOrder = () => {
-    setIsSuccessOpen(true)
-    showSuccess('تم تأكيد طلبك بنجاح')
-  }
+  const confirmOrder =
+    async () => {
+      if (
+        createOrderMutation
+          .isPending
+      ) {
+        return;
+      }
+
+      try {
+        const order =
+          await createOrderMutation
+            .mutateAsync({
+              customerName:
+                customerData
+                  .name
+                  .trim(),
+
+              customerPhone:
+                customerData
+                  .phone
+                  .trim(),
+
+              deliveryAddress:
+                customerData
+                  .address
+                  .trim(),
+
+              couponCode:
+                appliedCoupon ||
+                undefined,
+            });
+
+        setCompletedOrder(
+          order,
+        );
+
+        setIsSuccessOpen(
+          true,
+        );
+
+        showSuccess(
+          "تم تأكيد طلبك بنجاح",
+        );
+      } catch (error) {
+        showError(
+          error?.message ||
+            "تعذر تأكيد الطلب",
+        );
+      }
+    };
 
   const handlePrint = () => {
-    window.print()
-  }
+    window.print();
+  };
+
+  const handleFinishOrder =
+    () => {
+      setIsSuccessOpen(
+        false,
+      );
+
+      navigate(
+        "/orders",
+        {
+          replace: true,
+        },
+      );
+    };
+
+  const isProcessing =
+    previewOrderMutation
+      .isPending ||
+    createOrderMutation
+      .isPending;
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] pb-28">
       <header
         className="
           sticky top-0 z-50
-          flex h-16 items-center bg-white px-5
+          flex h-16 items-center
+          bg-white px-5
           shadow-[0_4px_20px_rgba(0,27,61,0.05)]
         "
       >
         <button
           type="button"
-          onClick={goBack}
+          onClick={
+            goBack
+          }
+          disabled={
+            isProcessing
+          }
           aria-label="رجوع"
+          className="
+            disabled:cursor-not-allowed
+            disabled:opacity-50
+          "
         >
-          <ArrowRight size={26} />
+          <ArrowRight
+            size={26}
+          />
         </button>
 
         <h1 className="flex-1 text-center text-2xl font-bold text-secondary">
@@ -118,51 +287,77 @@ function CheckoutPage() {
         <div className="w-7" />
       </header>
 
-      <CheckoutStepper currentStep={currentStep} />
+      <CheckoutStepper
+        currentStep={
+          currentStep
+        }
+      />
 
       <main className="mx-auto w-full max-w-md px-5 py-6">
-        {currentStep === 1 && (
+        {currentStep ===
+          1 && (
           <CartStep
-            discountPercentage={discountPercentage}
-            setDiscountPercentage={setDiscountPercentage}
-            appliedCoupon={appliedCoupon}
-            setAppliedCoupon={setAppliedCoupon}
+            appliedCoupon={
+              appliedCoupon
+            }
+            setAppliedCoupon={
+              setAppliedCoupon
+            }
           />
         )}
 
-        {currentStep === 2 && (
+        {currentStep ===
+          2 && (
           <CustomerStep
-            customerData={customerData}
-            setCustomerData={setCustomerData}
+            customerData={
+              customerData
+            }
+            setCustomerData={
+              setCustomerData
+            }
           />
         )}
 
-        {currentStep === 3 && (
+        {currentStep ===
+          3 && (
           <ReviewStep
-            customerData={customerData}
-            discountPercentage={discountPercentage}
-            discountAmount={discountAmount}
-            appliedCoupon={appliedCoupon}
+            customerData={
+              customerData
+            }
+            preview={
+              checkoutPreview
+            }
           />
         )}
       </main>
 
       <div
         className="
-          fixed bottom-0 left-0 z-40
-          flex w-full gap-3
-          rounded-t-2xl border-t border-gray-100
+          fixed bottom-0 left-0
+          z-40 flex w-full gap-3
+          rounded-t-2xl border-t
+          border-gray-100
           bg-white p-4
           shadow-[0_-10px_30px_rgba(0,27,61,0.12)]
         "
       >
-        {currentStep > 1 && (
+        {currentStep >
+          1 && (
           <button
             type="button"
-            onClick={goBack}
+            onClick={
+              goBack
+            }
+            disabled={
+              isProcessing
+            }
             className="
-              flex-1 rounded-xl border border-primary
-              py-4 font-semibold text-primary
+              flex-1 rounded-xl
+              border border-primary
+              py-4 font-semibold
+              text-primary
+              disabled:cursor-not-allowed
+              disabled:opacity-50
             "
           >
             رجوع
@@ -172,40 +367,81 @@ function CheckoutPage() {
         <button
           type="button"
           onClick={
-            currentStep === 3
+            currentStep ===
+            3
               ? confirmOrder
               : goNext
           }
           disabled={
-            currentStep === 1 &&
-            items.length === 0
+            isProcessing ||
+            (
+              currentStep ===
+                1 &&
+              items.length ===
+                0
+            )
           }
           className="
-            flex-[2] rounded-xl bg-secondary
-            py-4 font-semibold text-white
+            flex-[2] rounded-xl
+            bg-secondary py-4
+            font-semibold text-white
             disabled:cursor-not-allowed
             disabled:opacity-50
           "
         >
           <span className="flex items-center justify-center gap-2">
-            {currentStep === 1 && (
+            {isProcessing ? (
               <>
-                التالي
-                <ArrowLeft size={20} />
-              </>
-            )}
+                <span
+                  className="
+                    h-5 w-5
+                    animate-spin
+                    rounded-full
+                    border-2
+                    border-white/40
+                    border-t-white
+                  "
+                />
 
-            {currentStep === 2 && (
-              <>
-                مراجعة الطلب
-                <ArrowLeft size={20} />
+                {currentStep ===
+                3
+                  ? "جاري تأكيد الطلب..."
+                  : "جاري مراجعة الطلب..."}
               </>
-            )}
-
-            {currentStep === 3 && (
+            ) : (
               <>
-                تأكيد الطلب
-                <Check size={20} />
+                {currentStep ===
+                  1 && (
+                  <>
+                    التالي
+
+                    <ArrowLeft
+                      size={20}
+                    />
+                  </>
+                )}
+
+                {currentStep ===
+                  2 && (
+                  <>
+                    مراجعة الطلب
+
+                    <ArrowLeft
+                      size={20}
+                    />
+                  </>
+                )}
+
+                {currentStep ===
+                  3 && (
+                  <>
+                    تأكيد الطلب
+
+                    <Check
+                      size={20}
+                    />
+                  </>
+                )}
               </>
             )}
           </span>
@@ -213,58 +449,94 @@ function CheckoutPage() {
       </div>
 
       <Modal
-        isOpen={isSuccessOpen}
-        onClose={() => setIsSuccessOpen(false)}
+        isOpen={
+          isSuccessOpen
+        }
+        onClose={
+          handleFinishOrder
+        }
         title="تم تأكيد طلبك بنجاح 🎉"
         maxWidth="max-w-xl"
       >
-        <div className="max-h-[75vh] overflow-y-auto">
-          <Invoice
-            orderNumber={orderNumber}
-            items={items}
-            customer={customerData}
-            subtotal={subtotal}
-            deliveryFee={deliveryFee}
-            discountPercentage={discountPercentage}
-            discountAmount={discountAmount}
-            appliedCoupon={appliedCoupon}
-            total={total}
-            getFinalPrice={getFinalPrice}
-          />
+        {completedOrder && (
+          <div className="max-h-[75vh] overflow-y-auto">
+            <Invoice
+              orderNumber={
+                completedOrder
+                  .orderNumber
+              }
+              items={
+                completedOrder
+                  .items
+              }
+              customer={
+                completedOrder
+                  .customer
+              }
+              subtotal={
+                completedOrder
+                  .subtotal
+              }
+              deliveryFee={
+                completedOrder
+                  .deliveryFee
+              }
+              discountAmount={
+                completedOrder
+                  .discountAmount
+              }
+              appliedCoupon={
+                completedOrder
+                  .appliedCoupon
+              }
+              total={
+                completedOrder
+                  .total
+              }
+            />
 
-          <div className="mt-5 flex gap-3">
-            <button
-              type="button"
-              onClick={handlePrint}
-              className="
-                flex flex-1 items-center justify-center gap-2
-                rounded-xl bg-secondary py-3
-                font-semibold text-white
-              "
-            >
-              <Printer size={20} />
-              اطبع فاتورتك بأمان
-            </button>
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={
+                  handlePrint
+                }
+                className="
+                  flex flex-1
+                  items-center
+                  justify-center
+                  gap-2 rounded-xl
+                  bg-secondary py-3
+                  font-semibold
+                  text-white
+                "
+              >
+                <Printer
+                  size={20}
+                />
 
-            <button
-              type="button"
-              onClick={() => {
-                clearCart()
-                setIsSuccessOpen(false)
-                navigate('/')
-              }}
-              className="
-                flex-1 rounded-xl border border-outline
-                py-3 font-semibold
-              "
-            >
-              تم
-            </button>
+                اطبع فاتورتك بأمان
+              </button>
+
+              <button
+                type="button"
+                onClick={
+                  handleFinishOrder
+                }
+                className="
+                  flex-1 rounded-xl
+                  border border-outline
+                  py-3 font-semibold
+                "
+              >
+                تم
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </Modal>
     </div>
-  )
+  );
 }
 
-export default CheckoutPage
+export default CheckoutPage;

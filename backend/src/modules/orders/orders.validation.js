@@ -17,7 +17,9 @@ const phoneSchema = z
   )
   .refine(
     (value) =>
-      EGYPTIAN_PHONE_REGEX.test(value),
+      EGYPTIAN_PHONE_REGEX.test(
+        value
+      ),
     {
       message:
         "Enter a valid Egyptian phone number",
@@ -45,7 +47,8 @@ const couponCodeSchema =
       }
 
       if (
-        typeof value === "string" &&
+        typeof value ===
+          "string" &&
         value.trim() === ""
       ) {
         return undefined;
@@ -137,6 +140,100 @@ export const orderIdParamsSchema =
     .object({
       id: z.uuid(
         "Invalid order ID"
+      ),
+    })
+    .strict();
+
+/*
+|--------------------------------------------------------------------------
+| Admin Orders Query
+|--------------------------------------------------------------------------
+|
+| Examples:
+|
+| /admin/orders?page=1&limit=20
+| /admin/orders?page=2&limit=20
+| /admin/orders?status=received
+|
+| "all" is treated as no status filter.
+|--------------------------------------------------------------------------
+*/
+
+export const adminOrdersQuerySchema =
+  z
+    .object({
+      page: z.coerce
+        .number()
+        .int()
+        .min(1)
+        .default(1),
+
+      limit: z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(100)
+        .default(20),
+
+      status: z.preprocess(
+        (value) => {
+          if (
+            value === undefined ||
+            value === null ||
+            value === "" ||
+            value === "all"
+          ) {
+            return undefined;
+          }
+
+          return value;
+        },
+
+        z
+          .enum([
+            "received",
+            "confirmed",
+            "preparing",
+            "out_for_delivery",
+            "delivered",
+            "cancelled",
+          ])
+          .transform((value) =>
+            value.toUpperCase()
+          )
+          .optional()
+      ),
+
+      search: z.preprocess(
+        (value) => {
+          if (
+            value === undefined ||
+            value === null
+          ) {
+            return undefined;
+          }
+
+          if (
+            typeof value ===
+            "string"
+          ) {
+            const trimmed =
+              value.trim();
+
+            return trimmed ||
+              undefined;
+          }
+
+          return value;
+        },
+
+        z
+          .string()
+          .max(
+            120,
+            "Search term must not exceed 120 characters"
+          )
+          .optional()
       ),
     })
     .strict();

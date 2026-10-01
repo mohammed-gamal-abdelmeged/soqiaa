@@ -1,55 +1,131 @@
-import { createContext, useState } from 'react'
+import { createContext } from "react";
 
 import {
-  getAccessToken,
-  saveAccessToken,
-  clearAuthStorage,
-} from '../../../utils/storage'
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
-export const AuthContext = createContext(null)
+import api from "../../../services/api";
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
+export const AuthContext =
+  createContext(null);
 
-  const [accessToken, setAccessToken] = useState(() => {
-    return getAccessToken()
-  })
+const AUTH_QUERY_KEY = [
+  "auth",
+  "me",
+];
 
-  const isAuthenticated = Boolean(accessToken)
+async function getAuthenticatedUser() {
+  const response =
+    await api.get("/auth/me");
 
-  const setAuthData = ({ user, accessToken }) => {
-    setUser(user)
-    setAccessToken(accessToken)
+  return response.data.data.user;
+}
 
-    saveAccessToken(accessToken)
-  }
-  const updateUser = (updatedData) => {
-  setUser((currentUser) => ({
-    ...currentUser,
-    ...updatedData,
-  }))}
+export function AuthProvider({
+  children,
+}) {
+  const queryClient =
+    useQueryClient();
 
-  const logout = () => {
-    setUser(null)
-    setAccessToken(null)
+  const {
+    data: user = null,
+    isPending: isAuthLoading,
+  } = useQuery({
+    queryKey:
+      AUTH_QUERY_KEY,
 
-    clearAuthStorage()
-  }
+    queryFn:
+      getAuthenticatedUser,
 
+    staleTime:
+      5 * 60 * 1000,
 
+    retry: false,
+  });
+
+  const isAuthenticated =
+    Boolean(user);
+
+  /*
+   * Login already returns the user.
+   * We put it directly in the auth cache
+   * instead of making another /auth/me request.
+   */
+  const setAuthData = ({
+    user: authenticatedUser,
+  }) => {
+    queryClient.setQueryData(
+      AUTH_QUERY_KEY,
+      authenticatedUser,
+    );
+  };
+
+  const updateUser = (
+    updatedData,
+  ) => {
+    queryClient.setQueryData(
+      AUTH_QUERY_KEY,
+      (currentUser) => {
+        if (!currentUser) {
+          return currentUser;
+        }
+
+        return {
+          ...currentUser,
+          ...updatedData,
+        };
+      },
+    );
+  };
+
+  const logout = async () => {
+    await api.post(
+      "/auth/logout",
+    );
+
+    /*
+     * Clear authenticated data only.
+     *
+     * Public catalog cache such as
+     * products/categories stays intact.
+     */
+    queryClient.setQueryData(
+      AUTH_QUERY_KEY,
+      null,
+    );
+
+    queryClient.removeQueries({
+      queryKey: ["profile"],
+    });
+
+    queryClient.removeQueries({
+      queryKey: ["cart"],
+    });
+
+    queryClient.removeQueries({
+      queryKey: ["favorites"],
+    });
+
+    queryClient.removeQueries({
+      queryKey: ["orders"],
+    });
+  };
 
   const value = {
     user,
-    accessToken,
     isAuthenticated,
+    isAuthLoading,
     setAuthData,
     updateUser,
     logout,
-  }
+  };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={value}
+    >
       {children}
     </AuthContext.Provider>
-  )
+  );
 }

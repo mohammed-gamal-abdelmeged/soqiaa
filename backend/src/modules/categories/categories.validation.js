@@ -99,9 +99,30 @@ export const updateCategorySchema =
       bannerSubtitle:
         bannerSubtitleSchema
           .optional(),
+
+      /*
+      |--------------------------------------------------------------------------
+      | Confirm Sort Order Replacement
+      |--------------------------------------------------------------------------
+      |
+      | دي Command Flag مش Field في جدول Category.
+      |
+      | لو الأدمن وافق إن القسم الحالي ياخد مكان
+      | قسم نشط بنفس sortOrder، الـFrontend هيبعت:
+      |
+      | replaceSortOrderConflict = true
+      |
+      | والـservice هيقوم بنقل القسم القديم
+      | لآخر ترتيب نشط + 1 داخل Transaction.
+      |--------------------------------------------------------------------------
+      */
+
+      replaceSortOrderConflict:
+        multipartBooleanSchema
+          .optional(),
     })
-    .strict()
-    
+    .strict();
+
 export const createSubcategorySchema =
   z
     .object({
@@ -120,12 +141,40 @@ export const updateSubcategorySchema =
         z
           .boolean()
           .optional(),
+
+      /*
+      |--------------------------------------------------------------------------
+      | Confirm Subcategory Sort Order Replacement
+      |--------------------------------------------------------------------------
+      |
+      | دي Command Flag مش Field في جدول Subcategory.
+      |
+      | لو الأدمن حاول يفعّل Subcategory والـsortOrder
+      | بتاعها مستخدم بواسطة Subcategory نشطة،
+      | الـBackend يرجع Conflict.
+      |
+      | لو الأدمن وافق على الاستبدال، الـFrontend هيبعت:
+      |
+      | replaceSortOrderConflict = true
+      |
+      | والـservice هينقل الـSubcategory القديمة
+      | لآخر ترتيب نشط + 1 داخل Transaction.
+      |--------------------------------------------------------------------------
+      */
+
+      replaceSortOrderConflict:
+        multipartBooleanSchema
+          .optional(),
     })
     .strict()
     .refine(
       (data) =>
         Object.keys(data)
-          .length > 0,
+          .some(
+            (key) =>
+              key !==
+              "replaceSortOrderConflict"
+          ),
       {
         message:
           "At least one field must be provided",

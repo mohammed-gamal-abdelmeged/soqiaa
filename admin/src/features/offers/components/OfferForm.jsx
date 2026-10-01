@@ -12,9 +12,9 @@ export default function OfferForm({
   mode = "add",
   initialData = null,
 
-  categories,
-  categoryDetails,
-  products,
+  categories = [],
+  categoryDetails = {},
+  products = [],
 
   usedProductIds = [],
 
@@ -32,9 +32,34 @@ export default function OfferForm({
     useState({});
 
   /*
-    =====================================
-    Fill edit form
-    =====================================
+  |--------------------------------------------------------------------------
+  | Helpers
+  |--------------------------------------------------------------------------
+  */
+
+  const isSameId = (
+    first,
+    second,
+  ) => {
+    if (
+      first === undefined ||
+      first === null ||
+      second === undefined ||
+      second === null
+    ) {
+      return false;
+    }
+
+    return (
+      String(first) ===
+      String(second)
+    );
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Fill Edit Form
+  |--------------------------------------------------------------------------
   */
 
   useEffect(() => {
@@ -42,10 +67,14 @@ export default function OfferForm({
       mode === "edit" &&
       initialData
     ) {
-      const product = products.find(
-        (item) =>
-          item.id === initialData.productId,
-      );
+      const product =
+        products.find(
+          (item) =>
+            isSameId(
+              item.id,
+              initialData.productId,
+            ),
+        );
 
       setForm({
         categorySlug:
@@ -59,7 +88,8 @@ export default function OfferForm({
             : "",
 
         productId:
-          initialData.productId != null
+          initialData.productId !=
+          null
             ? String(
                 initialData.productId,
               )
@@ -74,7 +104,8 @@ export default function OfferForm({
             : "",
 
         isActive:
-          initialData.isActive ?? true,
+          initialData.isActive ??
+          true,
       });
 
       setErrors({});
@@ -98,22 +129,25 @@ export default function OfferForm({
   ]);
 
   /*
-    =====================================
-    Subcategories
-    =====================================
+  |--------------------------------------------------------------------------
+  | Subcategories
+  |--------------------------------------------------------------------------
   */
 
   const subcategories =
     form.categorySlug
-      ? categoryDetails[
-          form.categorySlug
-        ]?.subcategories ?? []
+      ? (
+          categoryDetails[
+            form.categorySlug
+          ]?.subcategories ??
+          []
+        )
       : [];
 
   /*
-    =====================================
-    Products based on selections
-    =====================================
+  |--------------------------------------------------------------------------
+  | Products Based On Selection
+  |--------------------------------------------------------------------------
   */
 
   const availableProducts =
@@ -127,40 +161,66 @@ export default function OfferForm({
 
       return products.filter(
         (product) => {
+          /*
+          |--------------------------------------------------------------------
+          | Category
+          |--------------------------------------------------------------------
+          */
+
           const belongsToCategory =
             product.categorySlug ===
             form.categorySlug;
 
+          /*
+          |--------------------------------------------------------------------
+          | Subcategory
+          |--------------------------------------------------------------------
+          */
+
           const belongsToSubcategory =
-            String(
+            isSameId(
               product.subcategoryId,
-            ) ===
-            String(
               form.subcategoryId,
             );
 
-          /*
-            المنتج اللي عليه عرض بالفعل
-            مينفعش نعمل له Offer تاني.
+          if (
+            !belongsToCategory ||
+            !belongsToSubcategory
+          ) {
+            return false;
+          }
 
-            لكن في Edit لازم المنتج الحالي
-            يفضل ظاهر.
+          /*
+          |--------------------------------------------------------------------
+          | Existing Offer
+          |--------------------------------------------------------------------
+          |
+          | المنتج اللي عليه عرض بالفعل
+          | مينفعش نعمل له Offer تاني.
+          |
+          | في Edit:
+          | المنتج الحالي يفضل ظاهر.
           */
+
           const alreadyUsed =
-            usedProductIds.includes(
-              product.id,
+            usedProductIds.some(
+              (usedProductId) =>
+                isSameId(
+                  usedProductId,
+                  product.id,
+                ),
             );
 
           const isCurrentProduct =
             mode === "edit" &&
-            initialData?.productId ===
-              product.id;
+            isSameId(
+              initialData?.productId,
+              product.id,
+            );
 
           return (
-            belongsToCategory &&
-            belongsToSubcategory &&
-            (!alreadyUsed ||
-              isCurrentProduct)
+            !alreadyUsed ||
+            isCurrentProduct
           );
         },
       );
@@ -172,6 +232,12 @@ export default function OfferForm({
       mode,
       initialData,
     ]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Update Field
+  |--------------------------------------------------------------------------
+  */
 
   const updateField = (
     field,
@@ -191,9 +257,9 @@ export default function OfferForm({
   };
 
   /*
-    =====================================
-    Category Change
-    =====================================
+  |--------------------------------------------------------------------------
+  | Category Change
+  |--------------------------------------------------------------------------
   */
 
   const handleCategoryChange = (
@@ -205,8 +271,10 @@ export default function OfferForm({
       categorySlug: value,
 
       /*
-        لازم نصفر اللي تحت القسم
-      */
+       * تغيير القسم الأساسي
+       * يصفر القسم الفرعي والمنتج.
+       */
+
       subcategoryId: "",
       productId: "",
     }));
@@ -220,9 +288,9 @@ export default function OfferForm({
   };
 
   /*
-    =====================================
-    Subcategory Change
-    =====================================
+  |--------------------------------------------------------------------------
+  | Subcategory Change
+  |--------------------------------------------------------------------------
   */
 
   const handleSubcategoryChange = (
@@ -230,7 +298,14 @@ export default function OfferForm({
   ) => {
     setForm((current) => ({
       ...current,
+
       subcategoryId: value,
+
+      /*
+       * تغيير القسم الفرعي
+       * يصفر المنتج.
+       */
+
       productId: "",
     }));
 
@@ -242,35 +317,61 @@ export default function OfferForm({
   };
 
   /*
-    =====================================
-    Validation
-    =====================================
+  |--------------------------------------------------------------------------
+  | Validation
+  |--------------------------------------------------------------------------
   */
 
   const validate = () => {
     const nextErrors = {};
+
+    /*
+    |----------------------------------------------------------------------
+    | Category
+    |----------------------------------------------------------------------
+    */
 
     if (!form.categorySlug) {
       nextErrors.categorySlug =
         "اختر القسم الأساسي";
     }
 
+    /*
+    |----------------------------------------------------------------------
+    | Subcategory
+    |----------------------------------------------------------------------
+    */
+
     if (!form.subcategoryId) {
       nextErrors.subcategoryId =
         "اختر القسم الفرعي";
     }
+
+    /*
+    |----------------------------------------------------------------------
+    | Product
+    |----------------------------------------------------------------------
+    */
 
     if (!form.productId) {
       nextErrors.productId =
         "اختر المنتج";
     }
 
-    const discount = Number(
-      form.discountPercentage,
-    );
+    /*
+    |----------------------------------------------------------------------
+    | Discount
+    |----------------------------------------------------------------------
+    */
+
+    const discount =
+      Number(
+        form.discountPercentage,
+      );
 
     if (
-      !form.discountPercentage ||
+      form.discountPercentage ===
+        "" ||
       !Number.isFinite(discount) ||
       discount <= 0 ||
       discount > 100
@@ -279,18 +380,21 @@ export default function OfferForm({
         "أدخل نسبة خصم من 1 إلى 100";
     }
 
-    setErrors(nextErrors);
+    setErrors(
+      nextErrors,
+    );
 
     return (
-      Object.keys(nextErrors)
-        .length === 0
+      Object.keys(
+        nextErrors,
+      ).length === 0
     );
   };
 
   /*
-    =====================================
-    Submit
-    =====================================
+  |--------------------------------------------------------------------------
+  | Submit
+  |--------------------------------------------------------------------------
   */
 
   const handleSubmit = (
@@ -298,20 +402,42 @@ export default function OfferForm({
   ) => {
     event.preventDefault();
 
-    if (!validate()) return;
+    if (!validate()) {
+      return;
+    }
+
+    /*
+     * مهم:
+     *
+     * productId لا يتم تحويله إلى Number.
+     *
+     * الـProduct ID عندنا UUID،
+     * وبالتالي لازم يفضل String.
+     */
 
     onSubmit({
-      productId: Number(
-        form.productId,
-      ),
+      productId:
+        String(
+          form.productId,
+        ),
 
-      discountPercentage: Number(
-        form.discountPercentage,
-      ),
+      discountPercentage:
+        Number(
+          form.discountPercentage,
+        ),
 
-      isActive: form.isActive,
+      isActive:
+        Boolean(
+          form.isActive,
+        ),
     });
   };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Render
+  |--------------------------------------------------------------------------
+  */
 
   return (
     <form
@@ -330,7 +456,9 @@ export default function OfferForm({
         </label>
 
         <select
-          value={form.categorySlug}
+          value={
+            form.categorySlug
+          }
           onChange={(event) =>
             handleCategoryChange(
               event.target.value,
@@ -350,20 +478,28 @@ export default function OfferForm({
           {categories.map(
             (category) => (
               <option
-                key={category.id}
-                value={category.slug}
+                key={
+                  category.id
+                }
+                value={
+                  category.slug
+                }
               >
-                {category.name}
+                {
+                  category.name
+                }
               </option>
             ),
           )}
         </select>
 
-        {errors.categorySlug && (
+        {errors.categorySlug ? (
           <p className="mt-1.5 text-xs text-red-600">
-            {errors.categorySlug}
+            {
+              errors.categorySlug
+            }
           </p>
-        )}
+        ) : null}
       </div>
 
       {/* Subcategory */}
@@ -377,8 +513,12 @@ export default function OfferForm({
         </label>
 
         <select
-          value={form.subcategoryId}
-          disabled={!form.categorySlug}
+          value={
+            form.subcategoryId
+          }
+          disabled={
+            !form.categorySlug
+          }
           onChange={(event) =>
             handleSubcategoryChange(
               event.target.value,
@@ -400,20 +540,28 @@ export default function OfferForm({
           {subcategories.map(
             (subcategory) => (
               <option
-                key={subcategory.id}
-                value={subcategory.id}
+                key={
+                  subcategory.id
+                }
+                value={
+                  subcategory.id
+                }
               >
-                {subcategory.name}
+                {
+                  subcategory.name
+                }
               </option>
             ),
           )}
         </select>
 
-        {errors.subcategoryId && (
+        {errors.subcategoryId ? (
           <p className="mt-1.5 text-xs text-red-600">
-            {errors.subcategoryId}
+            {
+              errors.subcategoryId
+            }
           </p>
-        )}
+        ) : null}
       </div>
 
       {/* Product */}
@@ -427,7 +575,9 @@ export default function OfferForm({
         </label>
 
         <select
-          value={form.productId}
+          value={
+            form.productId
+          }
           disabled={
             !form.categorySlug ||
             !form.subcategoryId
@@ -456,31 +606,40 @@ export default function OfferForm({
           {availableProducts.map(
             (product) => (
               <option
-                key={product.id}
-                value={product.id}
+                key={
+                  product.id
+                }
+                value={
+                  product.id
+                }
               >
-                {product.name}
+                {
+                  product.name
+                }
               </option>
             ),
           )}
         </select>
 
-        {errors.productId && (
+        {errors.productId ? (
           <p className="mt-1.5 text-xs text-red-600">
-            {errors.productId}
+            {
+              errors.productId
+            }
           </p>
-        )}
+        ) : null}
 
         {form.categorySlug &&
-          form.subcategoryId &&
-          availableProducts.length ===
-            0 && (
-            <p className="mt-1.5 text-xs text-amber-600">
-              لا توجد منتجات متاحة
-              لإضافة عرض جديد في هذا
-              القسم الفرعي.
-            </p>
-          )}
+        form.subcategoryId &&
+        availableProducts.length ===
+          0 ? (
+          <p className="mt-1.5 text-xs text-amber-600">
+            لا توجد منتجات
+            متاحة لإضافة عرض
+            جديد في هذا القسم
+            الفرعي.
+          </p>
+        ) : null}
       </div>
 
       {/* Discount */}
@@ -522,13 +681,13 @@ export default function OfferForm({
           </span>
         </div>
 
-        {errors.discountPercentage && (
+        {errors.discountPercentage ? (
           <p className="mt-1.5 text-xs text-red-600">
             {
               errors.discountPercentage
             }
           </p>
-        )}
+        ) : null}
       </div>
 
       {/* Status */}
@@ -541,13 +700,15 @@ export default function OfferForm({
             </p>
 
             <p className="mt-1 text-xs text-slate-400">
-              حدد إذا كان الخصم نشطًا
-              حاليًا أم لا
+              حدد إذا كان الخصم
+              نشطًا حاليًا أم لا
             </p>
           </div>
 
           <StatusSwitch
-            checked={form.isActive}
+            checked={
+              form.isActive
+            }
             onChange={(value) =>
               updateField(
                 "isActive",
