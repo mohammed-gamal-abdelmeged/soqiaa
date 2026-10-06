@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /home
+Disallow: /categories
+Disallow: /offers
+Disallow: /best-sellers
+Disallow: /products
+Disallow: /favorites
+Disallow: /profile
+Disallow: /my-data
+Disallow: /cart
+Disallow: /orders
+
+Sitemap: https://soqiaa.com/sitemap.xml
