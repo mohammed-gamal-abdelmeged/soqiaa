@@ -9,6 +9,7 @@ import {
 import LoginPage from "../features/auth/pages/LoginPage";
 import RegisterPage from "../features/auth/pages/RegisterPage";
 import ForgotPasswordPage from "../features/auth/pages/ForgotPasswordPage";
+import LandingPage from "../features/landing/pages/LandingPage";
 
 import ProtectedRoute from "../features/auth/components/ProtectedRoute";
 
@@ -31,6 +32,12 @@ function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public Landing */}
+        <Route
+          path="/"
+          element={<LandingPage />}
+        />
+
         {/* Public Auth Routes */}
         <Route
           path="/login"
@@ -56,11 +63,6 @@ function AppRouter() {
           }
         >
           {/* Home */}
-          <Route
-            path="/"
-            element={<HomePage />}
-          />
-
           <Route
             path="/home"
             element={<HomePage />}
