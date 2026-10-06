@@ -1,13 +1,26 @@
-import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import {
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  Search,
+} from "lucide-react";
 
 import CategoryCard from "../components/CategoryCard";
+
+import CategoriesPageSkeleton from "../../../components/loaders/CategoriesPageSkeleton";
 
 import {
   useCategories,
 } from "../hooks/useCategories";
 
 function CategoriesPage() {
+  const [
+    searchInput,
+    setSearchInput,
+  ] = useState("");
+
   const [
     searchQuery,
     setSearchQuery,
@@ -27,7 +40,9 @@ function CategoriesPage() {
           .trim()
           .toLowerCase();
 
-      if (!normalizedSearch) {
+      if (
+        !normalizedSearch
+      ) {
         return categoriesData;
       }
 
@@ -44,33 +59,27 @@ function CategoriesPage() {
       searchQuery,
     ]);
 
-  if (isPending) {
-    return (
-      <div
-        className="
-          flex min-h-[60vh]
-          items-center justify-center
-        "
-      >
-        <span
-          className="
-            h-8 w-8 animate-spin
-            rounded-full border-2
-            border-gray-200
-            border-t-secondary
-          "
-        />
-      </div>
+  const handleSearch = (
+    event,
+  ) => {
+    event.preventDefault();
+
+    setSearchQuery(
+      searchInput.trim(),
     );
-  }
+  };
 
   if (isError) {
     return (
       <div
         className="
-          mx-auto flex min-h-[60vh]
-          w-full max-w-6xl
-          items-center justify-center
+          mx-auto
+          flex
+          min-h-[60vh]
+          w-full
+          max-w-6xl
+          items-center
+          justify-center
           px-5
         "
       >
@@ -89,61 +98,196 @@ function CategoriesPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-5 pt-5">
-      <section className="mb-6">
-        <h1 className="mb-4 text-2xl font-bold text-primary">
-          الأقسام
-        </h1>
+    <div
+      className="
+        mx-auto
+        w-full
+        max-w-6xl
+        px-5
+        pt-5
 
-        <div className="relative">
-          <Search
-            size={25}
+        md:px-6
+        md:pt-8
+
+        lg:max-w-[1180px]
+        lg:pt-10
+      "
+    >
+      <section
+        className="
+          mb-6
+
+          md:mb-8
+        "
+      >
+        <div
+          className="
+            md:flex
+            md:items-end
+            md:justify-between
+            md:gap-8
+          "
+        >
+          <div
             className="
-              pointer-events-none absolute
-              right-4 top-1/2
-              -translate-y-1/2
-              text-gray-500
+              md:shrink-0
             "
-          />
+          >
+            <h1
+              className="
+                mb-4
+                text-2xl
+                font-bold
+                text-primary
 
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(event) =>
-              setSearchQuery(
-                event.target.value,
-              )
+                md:mb-1
+                md:text-3xl
+
+                lg:text-4xl
+              "
+            >
+              الأقسام
+            </h1>
+
+            <p
+              className="
+                hidden
+                text-sm
+                text-text-muted
+
+                md:block
+
+                lg:text-base
+              "
+            >
+              اختار القسم اللي محتاجه وابدأ التسوق.
+            </p>
+          </div>
+
+          <form
+            onSubmit={
+              handleSearch
             }
-            placeholder="دور على قسم..."
-            aria-label="البحث عن قسم"
             className="
-              w-full rounded-full
-              border border-outline
-              bg-white py-3 pr-12 pl-4
-              text-base outline-none
-              shadow-sm transition
-              placeholder:text-gray-500
-              focus:border-secondary
-              focus:ring-1
-              focus:ring-secondary
+              relative
+
+              md:w-full
+              md:max-w-md
+
+              lg:max-w-lg
             "
-          />
+          >
+            <input
+              type="search"
+              value={
+                searchInput
+              }
+              onChange={(
+                event,
+              ) =>
+                setSearchInput(
+                  event.target
+                    .value,
+                )
+              }
+              disabled={
+                isPending
+              }
+              placeholder="دور على قسم..."
+              aria-label="البحث عن قسم"
+              className="
+                w-full
+                rounded-full
+                border
+                border-outline
+                bg-white
+                py-3
+                pr-4
+                pl-14
+                text-base
+                outline-none
+                shadow-sm
+                transition
+                placeholder:text-gray-500
+                focus:border-secondary
+                focus:ring-1
+                focus:ring-secondary
+                disabled:cursor-wait
+                disabled:opacity-70
+
+                md:py-3.5
+              "
+            />
+
+            <button
+              type="submit"
+              disabled={
+                isPending
+              }
+              aria-label="بحث"
+              className="
+                absolute
+                left-2
+                top-1/2
+                flex
+                h-9
+                w-9
+                -translate-y-1/2
+                items-center
+                justify-center
+                rounded-full
+                bg-secondary
+                text-white
+                transition
+                hover:opacity-90
+                active:scale-90
+                disabled:cursor-not-allowed
+                disabled:opacity-50
+
+                md:h-10
+                md:w-10
+              "
+            >
+              <Search
+                size={19}
+              />
+            </button>
+          </form>
         </div>
       </section>
 
-      {categories.length > 0 ? (
+      {isPending ? (
+        <CategoriesPageSkeleton />
+      ) : categories.length >
+        0 ? (
         <section
           className="
-            grid grid-cols-2 gap-4
-            md:grid-cols-4
+            grid
+            grid-cols-2
+            gap-4
+
+            md:grid-cols-3
+            md:gap-5
+
+            lg:grid-cols-4
+            lg:gap-6
           "
         >
           {categories.map(
-            (category, index) => (
+            (
+              category,
+              index,
+            ) => (
               <CategoryCard
-                key={category.id}
-                category={category}
-                index={index}
+                key={
+                  category.id
+                }
+                category={
+                  category
+                }
+                index={
+                  index
+                }
               />
             ),
           )}
@@ -151,7 +295,7 @@ function CategoriesPage() {
       ) : (
         <div className="py-16 text-center">
           <p className="text-text-muted">
-            {searchQuery.trim()
+            {searchQuery
               ? "مفيش أقسام بالاسم ده"
               : "مفيش أقسام متاحة حاليًا"}
           </p>

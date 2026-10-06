@@ -644,7 +644,7 @@ export default function CategoryDetailsPage() {
           deleteModal.subcategory
             ? isDeleting
               ? `جاري حذف القسم الفرعي "${deleteModal.subcategory.name}"...`
-              : `هل أنت متأكد من حذف القسم الفرعي "${deleteModal.subcategory.name}"؟`
+            : `سيتم حذف القسم الفرعي "${deleteModal.subcategory.name}" من المتجر مع المنتجات الموجودة بداخله. لن يتم حذف أي سجل طلبات أو فواتير قديمة. هل أنت متأكد؟`
             : ""
         }
         confirmText={isDeleting ? "جاري الحذف..." : "حذف القسم"}

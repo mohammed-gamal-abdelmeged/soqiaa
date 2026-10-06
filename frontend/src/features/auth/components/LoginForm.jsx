@@ -1,145 +1,183 @@
-import { useState } from 'react'
+import {
+  useState,
+} from "react";
+
 import {
   Link,
+  useLocation,
   useNavigate,
-} from 'react-router-dom'
+} from "react-router-dom";
 
-import TextField from '../../../components/ui/TextField'
-import PasswordField from '../../../components/ui/PasswordField'
+import TextField from "../../../components/ui/TextField";
+import PasswordField from "../../../components/ui/PasswordField";
 
-import { validateLogin } from '../validation/loginValidation'
-import { login } from '../../../services/auth.service'
-import { useAuth } from '../context/useAuth'
+import {
+  validateLogin,
+} from "../validation/loginValidation";
+
+import {
+  login,
+} from "../../../services/auth.service";
+
+import {
+  useAuth,
+} from "../context/useAuth";
 
 import {
   showError,
-  showSuccess,
-} from '../../../lib/toast'
+  showLoginSuccess,
+} from "../../../lib/toast";
 
 const initialFormData = {
-  phone: '',
-  password: '',
-}
+  phone: "",
+  password: "",
+};
 
 function LoginForm() {
-  const navigate = useNavigate()
+  const navigate =
+    useNavigate();
+
+  const location =
+    useLocation();
 
   const {
     setAuthData,
-  } = useAuth()
+  } = useAuth();
 
   const [
     formData,
     setFormData,
-  ] = useState(initialFormData)
+  ] = useState(
+    initialFormData,
+  );
 
   const [
     errors,
     setErrors,
-  ] = useState({})
+  ] = useState({});
 
   const [
     touched,
     setTouched,
-  ] = useState({})
+  ] = useState({});
 
   const [
     isSubmitting,
     setIsSubmitting,
-  ] = useState(false)
+  ] = useState(false);
 
-  const handleChange = (event) => {
+  const handleChange = (
+    event,
+  ) => {
     const {
       name,
       value,
-    } = event.target
+    } = event.target;
 
     const updatedFormData = {
       ...formData,
-      [name]: value,
-    }
+
+      [name]:
+        value,
+    };
 
     setFormData(
       updatedFormData,
-    )
+    );
 
-    if (touched[name]) {
+    if (
+      touched[name]
+    ) {
       const validationErrors =
         validateLogin(
           updatedFormData,
-        )
+        );
 
       setErrors(
         (current) => ({
           ...current,
+
           [name]:
             validationErrors[
               name
             ],
         }),
-      )
+      );
     }
-  }
+  };
 
-  const handleBlur = (event) => {
+  const handleBlur = (
+    event,
+  ) => {
     const {
       name,
-    } = event.target
+    } = event.target;
 
     setTouched(
       (current) => ({
         ...current,
-        [name]: true,
+
+        [name]:
+          true,
       }),
-    )
+    );
 
     const validationErrors =
       validateLogin(
         formData,
-      )
+      );
 
     setErrors(
       (current) => ({
         ...current,
+
         [name]:
           validationErrors[
             name
           ],
       }),
-    )
-  }
+    );
+  };
 
   const handleSubmit =
     async (event) => {
-      event.preventDefault()
+      event.preventDefault();
 
-      if (isSubmitting) {
-        return
+      if (
+        isSubmitting
+      ) {
+        return;
       }
 
       const validationErrors =
         validateLogin(
           formData,
-        )
+        );
 
       if (
         Object.keys(
           validationErrors,
-        ).length > 0
+        ).length >
+        0
       ) {
         setErrors(
           validationErrors,
-        )
+        );
 
         setTouched({
-          phone: true,
-          password: true,
-        })
+          phone:
+            true,
 
-        return
+          password:
+            true,
+        });
+
+        return;
       }
 
-      setIsSubmitting(true)
+      setIsSubmitting(
+        true,
+      );
 
       try {
         const result =
@@ -150,34 +188,78 @@ function LoginForm() {
 
             password:
               formData.password,
-          })
+          });
+
+        const user =
+          result.data.user;
 
         setAuthData({
-          user:
-            result.data.user,
-        })
+          user,
+        });
 
-        showSuccess(
-          'تم تسجيل الدخول بنجاح',
-        )
+        showLoginSuccess(
+          "تم تسجيل الدخول بنجاح",
+          user.fullName,
+        );
+
+        const requestedLocation =
+          location.state?.from;
+
+        const requestedPathname =
+          requestedLocation?.pathname ||
+          "";
+
+        const isSharedProduct =
+          requestedPathname.startsWith(
+            "/products/",
+          );
+
+        if (
+          isSharedProduct
+        ) {
+          const productPath =
+            `${requestedPathname}${
+              requestedLocation.search ||
+              ""
+            }${
+              requestedLocation.hash ||
+              ""
+            }`;
+
+          navigate(
+            productPath,
+            {
+              replace:
+                true,
+
+              state: {
+                openedFromSharedLink:
+                  true,
+              },
+            },
+          );
+
+          return;
+        }
 
         navigate(
-          '/',
+          "/",
           {
-            replace: true,
+            replace:
+              true,
           },
-        )
+        );
       } catch (error) {
         showError(
           error?.message ||
-            'تعذر تسجيل الدخول',
-        )
+            "تعذر تسجيل الدخول",
+        );
       } finally {
         setIsSubmitting(
           false,
-        )
+        );
       }
-    }
+    };
 
   return (
     <form
@@ -236,7 +318,13 @@ function LoginForm() {
         <div className="mt-2">
           <Link
             to="/forgot-password"
-            className="text-sm font-medium text-secondary transition hover:underline"
+            className="
+              text-sm
+              font-medium
+              text-secondary
+              transition
+              hover:underline
+            "
           >
             نسيت الباسورد؟
           </Link>
@@ -248,33 +336,33 @@ function LoginForm() {
         disabled={
           isSubmitting
         }
+        aria-busy={
+          isSubmitting
+        }
         className="
-          mt-3 w-full
+          mt-3
+          w-full
           rounded-xl
-          bg-secondary py-4
-          text-xl font-semibold
+          bg-secondary
+          py-4
+          text-xl
+          font-semibold
           text-white
           shadow-[0_4px_20px_rgba(0,27,61,0.05)]
           transition
           hover:opacity-90
           active:scale-[0.98]
-          disabled:cursor-not-allowed
+          disabled:cursor-wait
           disabled:opacity-60
           disabled:active:scale-100
         "
       >
-        {isSubmitting ? (
-          <span className="flex items-center justify-center gap-2">
-            <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-
-            جاري الدخول...
-          </span>
-        ) : (
-          'دخول'
-        )}
+        {isSubmitting
+          ? "جاري الدخول..."
+          : "دخول"}
       </button>
     </form>
-  )
+  );
 }
 
-export default LoginForm
+export default LoginForm;

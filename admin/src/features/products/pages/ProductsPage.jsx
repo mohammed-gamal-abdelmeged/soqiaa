@@ -7,7 +7,10 @@ import {
 } from "react-router-dom";
 
 import ConfirmDialog from "../../../components/ui/ConfirmDialog";
-import { appToast } from "../../../lib/toast";
+
+import {
+  appToast,
+} from "../../../lib/toast";
 
 import {
   useAdminCategories,
@@ -32,11 +35,13 @@ export default function ProductsPage() {
   |--------------------------------------------------------------------------
   |
   | searchInput:
-  | القيمة المكتوبة في الـinput.
+  | النص اللي الأدمن بيكتبه فقط.
   |
-  | search:
-  | القيمة اللي اتعمل لها Submit
-  | واللي فعلاً تروح للـBackend.
+  | submittedSearch:
+  | النص اللي تم تنفيذ البحث به.
+  |
+  | الكتابة وحدها لا تغير Query Key
+  | وبالتالي لا تعمل Request.
   |--------------------------------------------------------------------------
   */
 
@@ -46,8 +51,8 @@ export default function ProductsPage() {
   ] = useState("");
 
   const [
-    search,
-    setSearch,
+    submittedSearch,
+    setSubmittedSearch,
   ] = useState("");
 
   const [
@@ -86,6 +91,8 @@ export default function ProductsPage() {
     data: products = [],
     isLoading:
       isProductsLoading,
+    isFetching:
+      isProductsFetching,
     isError:
       isProductsError,
     error:
@@ -93,7 +100,7 @@ export default function ProductsPage() {
   } =
     useAdminProducts({
       search:
-        search ||
+        submittedSearch ||
         undefined,
 
       categorySlug:
@@ -137,12 +144,33 @@ export default function ProductsPage() {
   |--------------------------------------------------------------------------
   */
 
-  const handleSearchSubmit =
-    () => {
-      setSearch(
-        searchInput.trim(),
-      );
-    };
+  function handleSearchSubmit() {
+    const normalizedSearch =
+      searchInput.trim();
+
+    setSubmittedSearch(
+      normalizedSearch,
+    );
+  }
+
+  function handleClearSearch() {
+    setSearchInput("");
+    setSubmittedSearch("");
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Category Filter
+  |--------------------------------------------------------------------------
+  */
+
+  function handleCategoryChange(
+    nextCategory,
+  ) {
+    setCategory(
+      nextCategory,
+    );
+  }
 
   /*
   |--------------------------------------------------------------------------
@@ -162,7 +190,8 @@ export default function ProductsPage() {
   const handleCloseDeleteProduct =
     () => {
       if (
-        deleteProductMutation.isPending
+        deleteProductMutation
+          .isPending
       ) {
         return;
       }
@@ -180,15 +209,17 @@ export default function ProductsPage() {
 
       if (
         !product ||
-        deleteProductMutation.isPending
+        deleteProductMutation
+          .isPending
       ) {
         return;
       }
 
       try {
-        await deleteProductMutation.mutateAsync(
-          product.id,
-        );
+        await deleteProductMutation
+          .mutateAsync(
+            product.id,
+          );
 
         appToast.success(
           `تم حذف منتج ${product.name}`,
@@ -237,13 +268,26 @@ export default function ProductsPage() {
     <>
       <div className="space-y-6">
         <header>
-          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
-            إدارة المنتجات
-          </h1>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
+                إدارة المنتجات
+              </h1>
 
-          <p className="mt-1 text-sm text-slate-500">
-            عرض وإدارة جميع المنتجات المتاحة في المتجر
-          </p>
+              <p className="mt-1 text-sm text-slate-500">
+                عرض وإدارة جميع المنتجات المتاحة في المتجر
+              </p>
+            </div>
+
+            {isProductsFetching &&
+              !isProductsLoading && (
+              <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-emerald-600" />
+
+                جاري التحديث...
+              </div>
+            )}
+          </div>
         </header>
 
         <ProductsToolbar
@@ -256,11 +300,14 @@ export default function ProductsPage() {
           onSearchSubmit={
             handleSearchSubmit
           }
+          onSearchClear={
+            handleClearSearch
+          }
           category={
             category
           }
           onCategoryChange={
-            setCategory
+            handleCategoryChange
           }
           categories={
             categories
@@ -269,6 +316,16 @@ export default function ProductsPage() {
             handleAddProduct
           }
         />
+
+        {submittedSearch && (
+          <div className="flex items-center gap-2 text-xs text-violet-600">
+            نتائج البحث عن "
+            {
+              submittedSearch
+            }
+            "
+          </div>
+        )}
 
         {isProductsLoading ||
         isCategoriesLoading ? (
@@ -301,7 +358,16 @@ export default function ProductsPage() {
           </div>
         ) : products.length >
           0 ? (
-          <>
+          <div
+            className={[
+              isProductsFetching
+                ? "opacity-70"
+                : "",
+              "transition-opacity",
+            ].join(
+              " ",
+            )}
+          >
             <ProductsTable
               products={
                 products
@@ -314,7 +380,7 @@ export default function ProductsPage() {
               }
             />
 
-            <div className="space-y-3 md:hidden">
+            <div className="mt-3 space-y-3 md:hidden">
               {products.map(
                 (product) => (
                   <ProductMobileCard
@@ -334,11 +400,17 @@ export default function ProductsPage() {
                 ),
               )}
             </div>
-          </>
+          </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
             <p className="text-sm font-semibold text-slate-700">
               لا توجد منتجات مطابقة
+            </p>
+
+            <p className="mt-1 text-xs text-slate-500">
+              {submittedSearch
+                ? `لا يوجد منتج مطابق للبحث عن "${submittedSearch}"`
+                : "لا توجد منتجات مطابقة للفلاتر الحالية"}
             </p>
           </div>
         )}
@@ -355,7 +427,8 @@ export default function ProductsPage() {
             : ""
         }
         confirmText={
-          deleteProductMutation.isPending
+          deleteProductMutation
+            .isPending
             ? "جاري الحذف..."
             : "نعم، حذف المنتج"
         }

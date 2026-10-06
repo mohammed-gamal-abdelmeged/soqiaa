@@ -10,6 +10,7 @@ import {
 } from "react-router-dom";
 
 import CategoryStatusBadge from "./CategoryStatusBadge";
+import CategoryDeleteButton from "./CategoryDeleteButton";
 
 export default function CategoriesTable({
   categories,
@@ -72,7 +73,6 @@ export default function CategoriesTable({
                     }
                     className="cursor-pointer transition-colors hover:bg-slate-50/70"
                   >
-                    {/* Image */}
                     <td className="px-5 py-3">
                       <img
                         src={
@@ -84,14 +84,16 @@ export default function CategoriesTable({
                         className={[
                           "h-12 w-12 rounded-xl border",
                           "border-slate-200 object-cover",
+
                           !category.isActive
                             ? "opacity-50 grayscale"
                             : "",
-                        ].join(" ")}
+                        ].join(
+                          " ",
+                        )}
                       />
                     </td>
 
-                    {/* Name */}
                     <td className="px-5 py-3">
                       <div>
                         <p className="text-sm font-semibold text-slate-900">
@@ -108,14 +110,12 @@ export default function CategoriesTable({
                       </div>
                     </td>
 
-                    {/* Sort Order */}
                     <td className="px-5 py-3 text-sm text-slate-700">
                       {
                         category.sortOrder
                       }
                     </td>
 
-                    {/* Status */}
                     <td className="px-5 py-3">
                       <CategoryStatusBadge
                         isActive={
@@ -124,10 +124,8 @@ export default function CategoriesTable({
                       />
                     </td>
 
-                    {/* Actions */}
                     <td className="px-5 py-3">
                       <div className="flex justify-center gap-2">
-                        {/* Edit */}
                         <button
                           type="button"
                           disabled={
@@ -147,10 +145,13 @@ export default function CategoriesTable({
                             "rounded-lg border transition",
                             "border-blue-200 text-blue-600",
                             "hover:bg-blue-50",
+
                             isToggling
                               ? "cursor-not-allowed opacity-40"
                               : "",
-                          ].join(" ")}
+                          ].join(
+                            " ",
+                          )}
                           aria-label={`تعديل ${category.name}`}
                           title="تعديل"
                         >
@@ -159,7 +160,6 @@ export default function CategoriesTable({
                           />
                         </button>
 
-                        {/* Toggle Active Status */}
                         <button
                           type="button"
                           disabled={
@@ -184,18 +184,24 @@ export default function CategoriesTable({
                                   "bg-amber-50",
                                   "text-amber-600",
                                   "hover:bg-amber-100",
-                                ].join(" ")
+                                ].join(
+                                  " ",
+                                )
                               : [
                                   "border-emerald-200",
                                   "bg-emerald-50",
                                   "text-emerald-600",
                                   "hover:bg-emerald-100",
-                                ].join(" "),
+                                ].join(
+                                  " ",
+                                ),
 
                             isToggling
                               ? "cursor-not-allowed opacity-60"
                               : "",
-                          ].join(" ")}
+                          ].join(
+                            " ",
+                          )}
                           aria-label={`${toggleTitle} ${category.name}`}
                           title={
                             toggleTitle
@@ -203,19 +209,34 @@ export default function CategoriesTable({
                         >
                           {isToggling ? (
                             <LoaderCircle
-                              size={16}
+                              size={
+                                16
+                              }
                               className="animate-spin"
                             />
                           ) : category.isActive ? (
                             <EyeOff
-                              size={16}
+                              size={
+                                16
+                              }
                             />
                           ) : (
                             <Eye
-                              size={16}
+                              size={
+                                16
+                              }
                             />
                           )}
                         </button>
+
+                        <CategoryDeleteButton
+                          category={
+                            category
+                          }
+                          disabled={
+                            isToggling
+                          }
+                        />
                       </div>
                     </td>
                   </tr>

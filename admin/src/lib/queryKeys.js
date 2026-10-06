@@ -1,39 +1,72 @@
 export const queryKeys = {
-  dashboard: ['admin', 'dashboard'],
+  dashboard: [
+    "admin",
+    "dashboard",
+  ],
 
-  categories: ['admin', 'categories'],
+  categories: [
+    "admin",
+    "categories",
+  ],
 
-  products: (filters = {}) => [
-    'admin',
-    'products',
+  products: (
+    filters = {},
+  ) => [
+    "admin",
+    "products",
     filters,
   ],
 
-  product: (id) => [
-    'admin',
-    'products',
-    'detail',
+  product: (
+    id,
+  ) => [
+    "admin",
+    "products",
+    "detail",
     id,
   ],
 
-  offers: ['admin', 'offers'],
-
-  orders: (filters = {}) => [
-    'admin',
-    'orders',
-    filters,
+  offers: [
+    "admin",
+    "offers",
   ],
 
-  order: (id) => [
-    'admin',
-    'orders',
-    'detail',
+  coupons: [
+    "admin",
+    "coupons",
+  ],
+
+  coupon: (
+    id,
+  ) => [
+    "admin",
+    "coupons",
+    "detail",
     id,
   ],
 
-  customers: (filters = {}) => [
-    'admin',
-    'customers',
+  orders: (
+    filters = {},
+  ) => [
+    "admin",
+    "orders",
     filters,
   ],
-}
+
+  order: (
+    id,
+  ) => [
+    "admin",
+    "orders",
+    "detail",
+    id,
+  ],
+
+  customers: (
+    filters = {},
+  ) => [
+    "admin",
+    "customers",
+    filters,
+  ],
+};

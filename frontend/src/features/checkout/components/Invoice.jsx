@@ -1,3 +1,7 @@
+import {
+  Truck,
+} from "lucide-react";
+
 import logo from "../../../assets/images/logo.png";
 
 function Invoice({
@@ -5,7 +9,6 @@ function Invoice({
   items,
   customer,
   subtotal,
-  deliveryFee,
   discountAmount = 0,
   appliedCoupon = null,
   total,
@@ -14,16 +17,22 @@ function Invoice({
     <div
       id="invoice"
       className="
-        mx-auto w-full max-w-lg
-        rounded-3xl bg-white p-6
+        mx-auto
+        w-full
+        max-w-lg
+        rounded-3xl
+        bg-white
+        p-6
         shadow-[0_10px_40px_rgba(0,27,61,0.08)]
       "
     >
       {/* Invoice Header */}
       <div
         className="
-          border-b border-dashed
-          border-gray-300 pb-5
+          border-b
+          border-dashed
+          border-gray-300
+          pb-5
           text-center
         "
       >
@@ -31,7 +40,9 @@ function Invoice({
           src={logo}
           alt="Souqia"
           className="
-            mx-auto h-20 w-20
+            mx-auto
+            h-20
+            w-20
             object-contain
           "
         />
@@ -41,15 +52,20 @@ function Invoice({
         </h2>
 
         <p className="mt-1 text-sm text-gray-500">
-          رقم الطلب: {orderNumber}
+          رقم الطلب:{" "}
+          {
+            orderNumber
+          }
         </p>
       </div>
 
       {/* Customer Data */}
       <div
         className="
-          border-b border-dashed
-          border-gray-300 py-5
+          border-b
+          border-dashed
+          border-gray-300
+          py-5
           text-sm
         "
       >
@@ -59,15 +75,24 @@ function Invoice({
 
         <div className="space-y-2 text-text-muted">
           <p>
-            الاسم: {customer.name}
+            الاسم:{" "}
+            {
+              customer.name
+            }
           </p>
 
           <p>
-            الموبايل: {customer.phone}
+            الموبايل:{" "}
+            {
+              customer.phone
+            }
           </p>
 
           <p>
-            العنوان: {customer.address}
+            العنوان:{" "}
+            {
+              customer.address
+            }
           </p>
         </div>
       </div>
@@ -75,8 +100,10 @@ function Invoice({
       {/* Products */}
       <div
         className="
-          border-b border-dashed
-          border-gray-300 py-5
+          border-b
+          border-dashed
+          border-gray-300
+          py-5
         "
       >
         <h3 className="mb-4 font-bold text-primary">
@@ -84,44 +111,59 @@ function Invoice({
         </h3>
 
         <div className="space-y-4">
-          {items.map((item) => {
-            const itemPrice =
-              item.finalPrice ??
-              item.price;
+          {items.map(
+            (item) => {
+              const itemPrice =
+                item.finalPrice ??
+                item.price;
 
-            const itemTotal =
-              item.lineTotal ??
-              itemPrice *
-                item.quantity;
+              const itemTotal =
+                item.lineTotal ??
+                itemPrice *
+                  item.quantity;
 
-            return (
-              <div
-                key={
-                  item.orderItemId ??
-                  item.id
-                }
-                className="
-                  flex justify-between
-                  gap-4 text-sm
-                "
-              >
-                <div>
-                  <p className="font-medium">
-                    {item.name}
-                  </p>
+              return (
+                <div
+                  key={
+                    item.orderItemId ??
+                    item.id
+                  }
+                  className="
+                    flex
+                    justify-between
+                    gap-4
+                    text-sm
+                  "
+                >
+                  <div>
+                    <p className="font-medium">
+                      {
+                        item.name
+                      }
+                    </p>
 
-                  <p className="mt-1 text-gray-500">
-                    {item.quantity} ×{" "}
-                    {itemPrice} ج.م
-                  </p>
+                    <p className="mt-1 text-gray-500">
+                      {
+                        item.quantity
+                      }{" "}
+                      ×{" "}
+                      {
+                        itemPrice
+                      }{" "}
+                      ج.م
+                    </p>
+                  </div>
+
+                  <span className="font-semibold">
+                    {
+                      itemTotal
+                    }{" "}
+                    ج.م
+                  </span>
                 </div>
-
-                <span className="font-semibold">
-                  {itemTotal} ج.م
-                </span>
-              </div>
-            );
-          })}
+              );
+            },
+          )}
         </div>
       </div>
 
@@ -137,7 +179,8 @@ function Invoice({
           </span>
         </div>
 
-        {discountAmount > 0 && (
+        {discountAmount >
+          0 && (
           <div className="flex justify-between text-secondary">
             <div>
               <span>
@@ -147,32 +190,32 @@ function Invoice({
               {appliedCoupon && (
                 <div className="mt-1 text-xs text-gray-500">
                   كود الخصم:{" "}
-                  {appliedCoupon}
+                  {
+                    appliedCoupon
+                  }
                 </div>
               )}
             </div>
 
             <span className="font-semibold">
-              - {discountAmount} ج.م
+              -{" "}
+              {
+                discountAmount
+              }{" "}
+              ج.م
             </span>
           </div>
         )}
 
-        <div className="flex justify-between">
-          <span className="text-text-muted">
-            التوصيل
-          </span>
-
-          <span>
-            {deliveryFee} ج.م
-          </span>
-        </div>
-
         <div
           className="
-            flex justify-between
-            border-t border-gray-200
-            pt-4 text-xl font-bold
+            flex
+            justify-between
+            border-t
+            border-gray-200
+            pt-4
+            text-xl
+            font-bold
           "
         >
           <span>
@@ -183,13 +226,59 @@ function Invoice({
             {total} ج.م
           </span>
         </div>
+
+        {/* Delivery Hint */}
+        <div
+          className="
+            mt-4
+            flex
+            items-start
+            gap-3
+            rounded-xl
+            border
+            border-emerald-100
+            bg-emerald-50/70
+            px-4
+            py-3
+          "
+        >
+          <div
+            className="
+              flex
+              h-9
+              w-9
+              shrink-0
+              items-center
+              justify-center
+              rounded-full
+              bg-white
+              text-secondary
+            "
+          >
+            <Truck
+              size={18}
+            />
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-primary">
+              رسوم التوصيل
+            </p>
+
+            <p className="mt-1 text-xs leading-5 text-text-muted">
+              يتم إضافة رسوم التوصيل حسب مكانك
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Footer */}
       <div
         className="
-          border-t border-dashed
-          border-gray-300 pt-5
+          border-t
+          border-dashed
+          border-gray-300
+          pt-5
           text-center
         "
       >

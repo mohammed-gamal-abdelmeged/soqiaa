@@ -10,6 +10,7 @@ import {
 } from "react-router-dom";
 
 import CategoryStatusBadge from "./CategoryStatusBadge";
+import CategoryDeleteButton from "./CategoryDeleteButton";
 
 export default function CategoryMobileCard({
   category,
@@ -43,7 +44,9 @@ export default function CategoryMobileCard({
         category.isActive
           ? "border-slate-200"
           : "border-slate-200 bg-slate-50/50",
-      ].join(" ")}
+      ].join(
+        " ",
+      )}
     >
       <div className="flex gap-3">
         <img
@@ -60,7 +63,9 @@ export default function CategoryMobileCard({
             !category.isActive
               ? "opacity-50 grayscale"
               : "",
-          ].join(" ")}
+          ].join(
+            " ",
+          )}
         />
 
         <div className="min-w-0 flex-1">
@@ -97,7 +102,6 @@ export default function CategoryMobileCard({
             </p>
 
             <div className="flex items-center gap-2">
-              {/* Edit */}
               <button
                 type="button"
                 disabled={
@@ -121,7 +125,9 @@ export default function CategoryMobileCard({
                   isToggling
                     ? "cursor-not-allowed opacity-40"
                     : "",
-                ].join(" ")}
+                ].join(
+                  " ",
+                )}
                 aria-label={`تعديل ${category.name}`}
                 title="تعديل"
               >
@@ -130,7 +136,6 @@ export default function CategoryMobileCard({
                 />
               </button>
 
-              {/* Toggle Active Status */}
               <button
                 type="button"
                 disabled={
@@ -155,18 +160,24 @@ export default function CategoryMobileCard({
                         "bg-amber-50",
                         "text-amber-600",
                         "hover:bg-amber-100",
-                      ].join(" ")
+                      ].join(
+                        " ",
+                      )
                     : [
                         "border-emerald-200",
                         "bg-emerald-50",
                         "text-emerald-600",
                         "hover:bg-emerald-100",
-                      ].join(" "),
+                      ].join(
+                        " ",
+                      ),
 
                   isToggling
                     ? "cursor-not-allowed opacity-60"
                     : "",
-                ].join(" ")}
+                ].join(
+                  " ",
+                )}
                 aria-label={`${toggleTitle} ${category.name}`}
                 title={
                   toggleTitle
@@ -174,19 +185,34 @@ export default function CategoryMobileCard({
               >
                 {isToggling ? (
                   <LoaderCircle
-                    size={16}
+                    size={
+                      16
+                    }
                     className="animate-spin"
                   />
                 ) : category.isActive ? (
                   <EyeOff
-                    size={16}
+                    size={
+                      16
+                    }
                   />
                 ) : (
                   <Eye
-                    size={16}
+                    size={
+                      16
+                    }
                   />
                 )}
               </button>
+
+              <CategoryDeleteButton
+                category={
+                  category
+                }
+                disabled={
+                  isToggling
+                }
+              />
             </div>
           </div>
         </div>

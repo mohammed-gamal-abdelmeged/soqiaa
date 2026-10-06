@@ -1,4 +1,6 @@
-import { useState } from "react";
+import {
+  useState,
+} from "react";
 
 import {
   ArrowRight,
@@ -13,6 +15,8 @@ import {
 } from "react-router-dom";
 
 import Modal from "../../../components/ui/Modal";
+
+import MyDataPageSkeleton from "../../../components/loaders/MyDataPageSkeleton";
 
 import {
   showError,
@@ -53,31 +57,37 @@ function MyDataPage() {
     formData,
     setFormData,
   ] = useState(
-    EMPTY_FORM
+    EMPTY_FORM,
   );
 
-  const handleOpenEdit = () => {
-    if (!user) {
-      return;
-    }
+  const handleOpenEdit =
+    () => {
+      if (!user) {
+        return;
+      }
 
-    setFormData({
-      fullName:
-        user.fullName || "",
+      setFormData({
+        fullName:
+          user.fullName ||
+          "",
 
-      phone:
-        user.phone || "",
+        phone:
+          user.phone ||
+          "",
 
-      address:
-        user.address
-          ?.fullAddress || "",
-    });
+        address:
+          user.address
+            ?.fullAddress ||
+          "",
+      });
 
-    setIsEditOpen(true);
-  };
+      setIsEditOpen(
+        true,
+      );
+    };
 
   const handleChange = (
-    event
+    event,
   ) => {
     const {
       name,
@@ -87,82 +97,65 @@ function MyDataPage() {
     setFormData(
       (current) => ({
         ...current,
+
         [name]:
           value,
-      })
+      }),
     );
   };
 
-  const handleSave = async () => {
-    const fullName =
-      formData.fullName.trim();
+  const handleSave =
+    async () => {
+      const fullName =
+        formData.fullName.trim();
 
-    const phone =
-      formData.phone.trim();
+      const phone =
+        formData.phone.trim();
 
-    const address =
-      formData.address.trim();
+      const address =
+        formData.address.trim();
 
-    if (
-      !fullName ||
-      !phone ||
-      !address
-    ) {
-      showError(
-        "من فضلك أكمل كل البيانات"
-      );
+      if (
+        !fullName ||
+        !phone ||
+        !address
+      ) {
+        showError(
+          "من فضلك أكمل كل البيانات",
+        );
 
-      return;
-    }
+        return;
+      }
 
-    try {
-      await updateProfile
-        .mutateAsync({
-          fullName,
-          phone,
-          address,
-        });
+      try {
+        await updateProfile
+          .mutateAsync({
+            fullName,
+            phone,
+            address,
+          });
 
-      setIsEditOpen(
-        false
-      );
+        setIsEditOpen(
+          false,
+        );
 
-      showSuccess(
-        "تم تحديث بياناتك بنجاح"
-      );
-    } catch (mutationError) {
-      showError(
+        showSuccess(
+          "تم تحديث بياناتك بنجاح",
+        );
+      } catch (
         mutationError
-          ?.message ||
-          "تعذر تحديث البيانات"
-      );
-    }
-  };
+      ) {
+        showError(
+          mutationError
+            ?.message ||
+            "تعذر تحديث البيانات",
+        );
+      }
+    };
 
   if (isPending) {
     return (
-      <PageShell
-        onBack={() =>
-          navigate(-1)
-        }
-      >
-        <div
-          className="
-            flex min-h-[320px]
-            items-center justify-center
-          "
-        >
-          <span
-            className="
-              h-8 w-8 animate-spin
-              rounded-full
-              border-2
-              border-gray-200
-              border-t-secondary
-            "
-          />
-        </div>
-      </PageShell>
+      <MyDataPageSkeleton />
     );
   }
 
@@ -178,8 +171,10 @@ function MyDataPage() {
       >
         <div
           className="
-            rounded-3xl bg-white
-            p-6 text-center
+            rounded-3xl
+            bg-white
+            p-6
+            text-center
             shadow-[0_4px_20px_rgba(0,27,61,0.05)]
           "
         >
@@ -212,115 +207,232 @@ function MyDataPage() {
         navigate(-1)
       }
     >
-      {/* Hero */}
-      <section
+      <div
         className="
-          overflow-hidden rounded-3xl
-          bg-primary p-6 text-white
-          shadow-[0_10px_30px_rgba(0,27,61,0.12)]
+          lg:grid
+          lg:grid-cols-[0.8fr_1.2fr]
+          lg:items-start
+          lg:gap-6
         "
       >
-        <div className="flex items-center gap-4">
+        {/* Hero */}
+        <section
+          className="
+            overflow-hidden
+            rounded-3xl
+            bg-primary
+            p-6
+            text-white
+            shadow-[0_10px_30px_rgba(0,27,61,0.12)]
+
+            md:p-7
+
+            lg:sticky
+            lg:top-28
+            lg:rounded-[30px]
+            lg:p-8
+          "
+        >
           <div
             className="
-              flex h-16 w-16
-              items-center justify-center
-              rounded-full bg-white/10
-              text-2xl font-bold
+              flex
+              items-center
+              gap-4
+
+              lg:flex-col
+              lg:items-start
             "
           >
-            {firstLetter}
+            <div
+              className="
+                flex
+                h-16
+                w-16
+                items-center
+                justify-center
+                rounded-full
+                bg-white/10
+                text-2xl
+                font-bold
+
+                md:h-20
+                md:w-20
+                md:text-3xl
+              "
+            >
+              {firstLetter}
+            </div>
+
+            <div>
+              <p
+                className="
+                  text-sm
+                  text-white/70
+
+                  md:text-base
+                "
+              >
+                أهلاً بيك
+              </p>
+
+              <h2
+                className="
+                  mt-1
+                  text-2xl
+                  font-bold
+
+                  md:text-3xl
+                "
+              >
+                {
+                  user.fullName
+                }
+              </h2>
+            </div>
           </div>
 
-          <div>
-            <p className="text-sm text-white/70">
-              أهلاً بيك
-            </p>
+          <div
+            className="
+              mt-6
+              rounded-2xl
+              bg-white/10
+              p-4
 
-            <h2 className="mt-1 text-2xl font-bold">
-              {user.fullName}
-            </h2>
+              md:p-5
+            "
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p
+                  className="
+                    text-sm
+                    text-white/70
+
+                    md:text-base
+                  "
+                >
+                  الطلبات التي تم توصيلها
+                </p>
+
+                <p
+                  className="
+                    mt-1
+                    text-3xl
+                    font-bold
+
+                    md:text-4xl
+                  "
+                >
+                  {
+                    user.deliveredOrdersCount
+                  }
+                </p>
+              </div>
+
+              <CheckCircle2
+                size={35}
+                className="
+                  md:h-10
+                  md:w-10
+                "
+              />
+            </div>
           </div>
-        </div>
+        </section>
 
-        <div
+        {/* Account Data */}
+        <section
           className="
-            mt-6 rounded-2xl
-            bg-white/10 p-4
+            mt-5
+            rounded-3xl
+            bg-white
+            p-5
+            shadow-[0_4px_20px_rgba(0,27,61,0.05)]
+
+            md:mt-6
+            md:p-7
+
+            lg:mt-0
+            lg:rounded-[30px]
+            lg:p-8
           "
         >
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-white/70">
-                الطلبات التي تم توصيلها
-              </p>
+            <h2
+              className="
+                text-lg
+                font-bold
+                text-primary
 
-              <p className="mt-1 text-3xl font-bold">
-                {user.deliveredOrdersCount}
-              </p>
-            </div>
+                md:text-2xl
+              "
+            >
+              بيانات الحساب
+            </h2>
 
-            <CheckCircle2
-              size={35}
-            />
+            <button
+              type="button"
+              onClick={
+                handleOpenEdit
+              }
+              className="
+                rounded-xl
+                bg-green-50
+                px-4
+                py-2
+                text-sm
+                font-semibold
+                text-secondary
+
+                md:px-5
+                md:py-2.5
+              "
+            >
+              تعديل
+            </button>
           </div>
-        </div>
-      </section>
 
-      {/* Account Data */}
-      <section
-        className="
-          mt-5 rounded-3xl
-          bg-white p-5
-          shadow-[0_4px_20px_rgba(0,27,61,0.05)]
-        "
-      >
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-primary">
-            بيانات الحساب
-          </h2>
-
-          <button
-            type="button"
-            onClick={
-              handleOpenEdit
-            }
+          <div
             className="
-              rounded-xl bg-green-50
-              px-4 py-2 text-sm
-              font-semibold text-secondary
+              mt-5
+              divide-y
+              divide-gray-100
+
+              md:mt-6
             "
           >
-            تعديل
-          </button>
-        </div>
+            <DataRow
+              icon={
+                UserRound
+              }
+              label="الاسم"
+              value={
+                user.fullName
+              }
+            />
 
-        <div className="mt-5 divide-y divide-gray-100">
-          <DataRow
-            icon={UserRound}
-            label="الاسم"
-            value={
-              user.fullName
-            }
-          />
+            <DataRow
+              icon={
+                Phone
+              }
+              label="رقم الموبايل"
+              value={
+                user.phone
+              }
+            />
 
-          <DataRow
-            icon={Phone}
-            label="رقم الموبايل"
-            value={
-              user.phone
-            }
-          />
-
-          <DataRow
-            icon={MapPin}
-            label="العنوان"
-            value={
-              address
-            }
-          />
-        </div>
-      </section>
+            <DataRow
+              icon={
+                MapPin
+              }
+              label="العنوان"
+              value={
+                address
+              }
+            />
+          </div>
+        </section>
+      </div>
 
       <Modal
         isOpen={
@@ -330,7 +442,7 @@ function MyDataPage() {
           !updateProfile
             .isPending &&
           setIsEditOpen(
-            false
+            false,
           )
         }
         title="تعديل بياناتي"
@@ -387,7 +499,7 @@ function MyDataPage() {
               type="button"
               onClick={() =>
                 setIsEditOpen(
-                  false
+                  false,
                 )
               }
               disabled={
@@ -395,8 +507,10 @@ function MyDataPage() {
                   .isPending
               }
               className="
-                flex-1 rounded-xl
-                border border-outline
+                flex-1
+                rounded-xl
+                border
+                border-outline
                 py-3
                 disabled:cursor-not-allowed
                 disabled:opacity-50
@@ -414,14 +528,21 @@ function MyDataPage() {
                 updateProfile
                   .isPending
               }
+              aria-busy={
+                updateProfile
+                  .isPending
+              }
               className="
-                flex flex-1
+                flex
+                flex-1
                 items-center
                 justify-center
                 rounded-xl
-                bg-secondary py-3
-                font-semibold text-white
-                disabled:cursor-not-allowed
+                bg-secondary
+                py-3
+                font-semibold
+                text-white
+                disabled:cursor-wait
                 disabled:opacity-60
               "
             >
@@ -445,32 +566,86 @@ function PageShell({
     <div className="min-h-screen bg-[#f8f9fa]">
       <header
         className="
-          sticky top-0 z-40
-          flex h-16 items-center
-          bg-white px-5
+          sticky
+          top-0
+          z-40
+          bg-white
           shadow-[0_4px_20px_rgba(0,27,61,0.05)]
         "
       >
-        <button
-          type="button"
-          onClick={
-            onBack
-          }
-          aria-label="رجوع"
+        <div
+          className="
+            mx-auto
+            flex
+            h-16
+            w-full
+            items-center
+            px-5
+
+            md:h-20
+            md:max-w-5xl
+            md:px-6
+
+            lg:max-w-[1180px]
+          "
         >
-          <ArrowRight
-            size={25}
-          />
-        </button>
+          <button
+            type="button"
+            onClick={
+              onBack
+            }
+            aria-label="رجوع"
+            className="
+              flex
+              h-10
+              w-10
+              items-center
+              justify-center
+              transition
+              active:scale-90
+            "
+          >
+            <ArrowRight
+              size={25}
+            />
+          </button>
 
-        <h1 className="flex-1 text-center text-xl font-bold text-primary">
-          بياناتي
-        </h1>
+          <h1
+            className="
+              flex-1
+              text-center
+              text-xl
+              font-bold
+              text-primary
 
-        <div className="w-6" />
+              md:text-2xl
+
+              lg:text-3xl
+            "
+          >
+            بياناتي
+          </h1>
+
+          <div className="w-10" />
+        </div>
       </header>
 
-      <main className="mx-auto w-full max-w-md px-5 py-5">
+      <main
+        className="
+          mx-auto
+          w-full
+          max-w-md
+          px-5
+          py-5
+
+          md:max-w-3xl
+          md:px-6
+          md:py-8
+
+          lg:max-w-[1000px]
+          lg:py-10
+        "
+      >
         {children}
       </main>
     </div>
@@ -483,14 +658,33 @@ function DataRow({
   value,
 }) {
   return (
-    <div className="flex items-start gap-3 py-4 first:pt-0 last:pb-0">
+    <div
+      className="
+        flex
+        items-start
+        gap-3
+        py-4
+        first:pt-0
+        last:pb-0
+
+        md:gap-4
+        md:py-5
+      "
+    >
       <div
         className="
-          flex h-10 w-10
-          shrink-0 items-center
+          flex
+          h-10
+          w-10
+          shrink-0
+          items-center
           justify-center
-          rounded-full bg-green-50
+          rounded-full
+          bg-green-50
           text-secondary
+
+          md:h-12
+          md:w-12
         "
       >
         <Icon
@@ -499,11 +693,27 @@ function DataRow({
       </div>
 
       <div className="min-w-0">
-        <p className="text-xs text-gray-500">
+        <p
+          className="
+            text-xs
+            text-gray-500
+
+            md:text-sm
+          "
+        >
           {label}
         </p>
 
-        <p className="mt-1 break-words font-medium text-primary">
+        <p
+          className="
+            mt-1
+            break-words
+            font-medium
+            text-primary
+
+            md:text-base
+          "
+        >
           {value}
         </p>
       </div>
@@ -525,8 +735,12 @@ function EditField({
       </label>
 
       <input
-        name={name}
-        value={value}
+        name={
+          name
+        }
+        value={
+          value
+        }
         onChange={
           onChange
         }
@@ -534,9 +748,12 @@ function EditField({
           disabled
         }
         className="
-          w-full rounded-xl
-          border border-outline
-          p-3 outline-none
+          w-full
+          rounded-xl
+          border
+          border-outline
+          p-3
+          outline-none
           focus:border-secondary
           focus:ring-1
           focus:ring-secondary

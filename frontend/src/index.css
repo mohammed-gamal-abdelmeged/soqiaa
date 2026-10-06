@@ -43,3 +43,83 @@
   }
 }
 
+/*
+|--------------------------------------------------------------------------
+| Success Toast
+|--------------------------------------------------------------------------
+*/
+
+@keyframes success-toast-card-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.97);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes success-toast-emoji-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) rotate(-12deg);
+  }
+
+  60% {
+    opacity: 1;
+    transform: scale(1.12) rotate(5deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes success-toast-progress {
+  from {
+    width: 100%;
+  }
+
+  to {
+    width: 0%;
+  }
+}
+
+.success-toast-card {
+  animation:
+    success-toast-card-in
+    220ms
+    ease-out
+    both;
+}
+
+.success-toast-emoji {
+  animation:
+    success-toast-emoji-pop
+    450ms
+    ease-out
+    both;
+}
+
+.success-toast-progress {
+  animation:
+    success-toast-progress
+    2800ms
+    linear
+    forwards;
+}
+
+@media (
+  prefers-reduced-motion:
+  reduce
+) {
+  .success-toast-card,
+  .success-toast-emoji,
+  .success-toast-progress {
+    animation: none;
+  }
+}
+

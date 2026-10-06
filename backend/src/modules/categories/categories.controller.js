@@ -1,8 +1,6 @@
 import {
   createCategory,
   createSubcategory,
-  deleteCategory,
-  deleteSubcategory,
   getAdminCategories,
   getAdminCategoryBySlug,
   getPublicCategories,
@@ -10,6 +8,11 @@ import {
   updateCategory,
   updateSubcategory,
 } from "./categories.service.js";
+
+import {
+  deleteCategory,
+  deleteSubcategory,
+} from "./categories.delete.service.js";
 
 /*
 |--------------------------------------------------------------------------
@@ -19,7 +22,7 @@ import {
 
 export async function listPublicCategories(
   req,
-  res
+  res,
 ) {
   const categories =
     await getPublicCategories();
@@ -35,14 +38,16 @@ export async function listPublicCategories(
 
 export async function showPublicCategory(
   req,
-  res
+  res,
 ) {
-  const { slug } =
+  const {
+    slug,
+  } =
     req.validated.params;
 
   const category =
     await getPublicCategoryBySlug(
-      slug
+      slug,
     );
 
   res.status(200).json({
@@ -62,7 +67,7 @@ export async function showPublicCategory(
 
 export async function listAdminCategories(
   req,
-  res
+  res,
 ) {
   const categories =
     await getAdminCategories();
@@ -78,14 +83,16 @@ export async function listAdminCategories(
 
 export async function showAdminCategory(
   req,
-  res
+  res,
 ) {
-  const { slug } =
+  const {
+    slug,
+  } =
     req.validated.params;
 
   const category =
     await getAdminCategoryBySlug(
-      slug
+      slug,
     );
 
   res.status(200).json({
@@ -97,14 +104,20 @@ export async function showAdminCategory(
   });
 }
 
+/*
+|--------------------------------------------------------------------------
+| Create Category
+|--------------------------------------------------------------------------
+*/
+
 export async function createCategoryController(
   req,
-  res
+  res,
 ) {
   const category =
     await createCategory(
       req.validated.body,
-      req.files
+      req.files,
     );
 
   res.status(201).json({
@@ -119,18 +132,26 @@ export async function createCategoryController(
   });
 }
 
+/*
+|--------------------------------------------------------------------------
+| Update Category
+|--------------------------------------------------------------------------
+*/
+
 export async function updateCategoryController(
   req,
-  res
+  res,
 ) {
-  const { id } =
+  const {
+    id,
+  } =
     req.validated.params;
 
   const category =
     await updateCategory(
       id,
       req.validated.body,
-      req.files
+      req.files,
     );
 
   res.status(200).json({
@@ -145,15 +166,25 @@ export async function updateCategoryController(
   });
 }
 
+/*
+|--------------------------------------------------------------------------
+| Delete Category
+|--------------------------------------------------------------------------
+*/
+
 export async function deleteCategoryController(
   req,
-  res
+  res,
 ) {
-  const { id } =
+  const {
+    id,
+  } =
     req.validated.params;
 
   const result =
-    await deleteCategory(id);
+    await deleteCategory(
+      id,
+    );
 
   res.status(200).json({
     success: true,
@@ -161,27 +192,30 @@ export async function deleteCategoryController(
     message:
       "Category deleted successfully",
 
-    data: result,
+    data:
+      result,
   });
 }
 
 /*
 |--------------------------------------------------------------------------
-| Subcategories
+| Create Subcategory
 |--------------------------------------------------------------------------
 */
 
 export async function createSubcategoryController(
   req,
-  res
+  res,
 ) {
-  const { categoryId } =
+  const {
+    categoryId,
+  } =
     req.validated.params;
 
   const subcategory =
     await createSubcategory(
       categoryId,
-      req.validated.body
+      req.validated.body,
     );
 
   res.status(201).json({
@@ -196,17 +230,25 @@ export async function createSubcategoryController(
   });
 }
 
+/*
+|--------------------------------------------------------------------------
+| Update Subcategory
+|--------------------------------------------------------------------------
+*/
+
 export async function updateSubcategoryController(
   req,
-  res
+  res,
 ) {
-  const { id } =
+  const {
+    id,
+  } =
     req.validated.params;
 
   const subcategory =
     await updateSubcategory(
       id,
-      req.validated.body
+      req.validated.body,
     );
 
   res.status(200).json({
@@ -221,16 +263,24 @@ export async function updateSubcategoryController(
   });
 }
 
+/*
+|--------------------------------------------------------------------------
+| Delete Subcategory
+|--------------------------------------------------------------------------
+*/
+
 export async function deleteSubcategoryController(
   req,
-  res
+  res,
 ) {
-  const { id } =
+  const {
+    id,
+  } =
     req.validated.params;
 
   const result =
     await deleteSubcategory(
-      id
+      id,
     );
 
   res.status(200).json({
@@ -239,6 +289,7 @@ export async function deleteSubcategoryController(
     message:
       "Subcategory deleted successfully",
 
-    data: result,
+    data:
+      result,
   });
 }

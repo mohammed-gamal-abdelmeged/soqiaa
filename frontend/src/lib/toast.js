@@ -1,25 +1,77 @@
-import { toast } from 'sonner'
+import {
+  createElement,
+} from "react";
 
-export const showSuccess = (message) => {
-  toast.success(message)
-}
+import {
+  toast,
+} from "sonner";
 
-export const showError = (message) => {
-  toast.error(message)
-}
+import SuccessToast from "../components/ui/SuccessToast";
 
-export const showInfo = (message) => {
-  toast.info(message)
-}
+export const showSuccess = (
+  message,
+) => {
+  toast.success(
+    message,
+  );
+};
 
-export const showWarning = (message) => {
-  toast.warning(message)
-}
+export const showLoginSuccess = (
+  message,
+  name,
+) => {
+  toast.custom(
+    () =>
+      createElement(
+        SuccessToast,
+        {
+          message,
+          name,
+        },
+      ),
+    {
+      duration: 2800,
+      position:
+        "top-center",
+    },
+  );
+};
 
-export const showLoading = (message = 'جاري التحميل...') => {
-  return toast.loading(message)
-}
+export const showError = (
+  message,
+) => {
+  toast.error(
+    message,
+  );
+};
 
-export const dismissToast = (toastId) => {
-  toast.dismiss(toastId)
-}
+export const showInfo = (
+  message,
+) => {
+  toast.info(
+    message,
+  );
+};
+
+export const showWarning = (
+  message,
+) => {
+  toast.warning(
+    message,
+  );
+};
+
+export const showLoading = (
+  message = "جاري التحميل...",
+) =>
+  toast.loading(
+    message,
+  );
+
+export const dismissToast = (
+  toastId,
+) => {
+  toast.dismiss(
+    toastId,
+  );
+};

@@ -51,13 +51,27 @@ function getErrorDetails(
 export default function CategoriesPage() {
   /*
   |--------------------------------------------------------------------------
-  | Filters
+  | Search
+  |--------------------------------------------------------------------------
+  |
+  | searchInput:
+  | النص اللي الأدمن بيكتبه فقط.
+  |
+  | submittedSearch:
+  | النص اللي اتعمل له بحث فعلي.
+  |
+  | الكتابة لوحدها لا تغير النتائج.
   |--------------------------------------------------------------------------
   */
 
   const [
-    search,
-    setSearch,
+    searchInput,
+    setSearchInput,
+  ] = useState("");
+
+  const [
+    submittedSearch,
+    setSubmittedSearch,
   ] = useState("");
 
   const [
@@ -151,10 +165,12 @@ export default function CategoriesPage() {
 
   const isSaving =
     isCreating ||
-    (isUpdating &&
+    (
+      isUpdating &&
       Boolean(
         formModal.isOpen,
-      ));
+      )
+    );
 
   const isReplacing =
     isUpdating &&
@@ -171,7 +187,7 @@ export default function CategoriesPage() {
   const filteredCategories =
     useMemo(() => {
       const normalizedSearch =
-        search
+        submittedSearch
           .trim()
           .toLowerCase();
 
@@ -191,12 +207,16 @@ export default function CategoriesPage() {
             const matchesStatus =
               status ===
                 "all" ||
-              (status ===
-                "active" &&
-                category.isActive) ||
-              (status ===
-                "inactive" &&
-                !category.isActive);
+              (
+                status ===
+                  "active" &&
+                category.isActive
+              ) ||
+              (
+                status ===
+                  "inactive" &&
+                !category.isActive
+              );
 
             return (
               matchesSearch &&
@@ -235,9 +255,29 @@ export default function CategoriesPage() {
         );
     }, [
       categories,
-      search,
+      submittedSearch,
       status,
     ]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Search Actions
+  |--------------------------------------------------------------------------
+  */
+
+  function handleSearchSubmit() {
+    const normalizedSearch =
+      searchInput.trim();
+
+    setSubmittedSearch(
+      normalizedSearch,
+    );
+  }
+
+  function handleClearSearch() {
+    setSearchInput("");
+    setSubmittedSearch("");
+  }
 
   /*
   |--------------------------------------------------------------------------
@@ -321,9 +361,6 @@ export default function CategoriesPage() {
     setFormErrors({});
 
     try {
-      /*
-       * Create
-       */
       if (
         formModal.mode ===
         "add"
@@ -350,9 +387,6 @@ export default function CategoriesPage() {
         return;
       }
 
-      /*
-       * Update
-       */
       const editedCategory =
         formModal.category;
 
@@ -731,10 +765,16 @@ export default function CategoriesPage() {
         {/* Toolbar */}
         <CategoriesToolbar
           search={
-            search
+            searchInput
           }
           onSearchChange={
-            setSearch
+            setSearchInput
+          }
+          onSearchSubmit={
+            handleSearchSubmit
+          }
+          onSearchClear={
+            handleClearSearch
           }
           status={
             status
@@ -755,12 +795,22 @@ export default function CategoriesPage() {
             </h2>
 
             <p className="mt-1 text-xs text-slate-500">
-              {search ||
+              {submittedSearch ||
               status !==
                 "all"
                 ? `النتائج: ${filteredCategories.length}`
                 : `إجمالي الأقسام: ${categories.length}`}
             </p>
+
+            {submittedSearch && (
+              <p className="mt-1 text-xs text-violet-600">
+                نتائج البحث عن "
+                {
+                  submittedSearch
+                }
+                "
+              </p>
+            )}
           </div>
 
           <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
@@ -782,7 +832,6 @@ export default function CategoriesPage() {
               "transition-opacity",
             ].join(" ")}
           >
-            {/* Desktop */}
             <CategoriesTable
               categories={
                 filteredCategories
@@ -798,7 +847,6 @@ export default function CategoriesPage() {
               }
             />
 
-            {/* Mobile */}
             <div className="space-y-3 md:hidden">
               {filteredCategories.map(
                 (

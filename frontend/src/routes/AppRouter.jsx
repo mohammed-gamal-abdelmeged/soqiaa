@@ -1,5 +1,7 @@
 import {
   BrowserRouter,
+  Navigate,
+  Outlet,
   Route,
   Routes,
 } from "react-router-dom";
@@ -29,7 +31,7 @@ function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Auth */}
+        {/* Public Auth Routes */}
         <Route
           path="/login"
           element={<LoginPage />}
@@ -45,96 +47,100 @@ function AppRouter() {
           element={<ForgotPasswordPage />}
         />
 
-        {/* Public Store */}
+        {/* Protected Store */}
         <Route
-          path="/"
-          element={<HomePage />}
-        />
-
-        <Route
-          path="/home"
-          element={<HomePage />}
-        />
-
-        <Route
-          path="/offers"
-          element={<OffersPage />}
-        />
-
-        <Route
-          path="/best-sellers"
-          element={<BestSellersPage />}
-        />
-
-        <Route element={<MainLayout />}>
+          element={
+            <ProtectedRoute>
+              <Outlet />
+            </ProtectedRoute>
+          }
+        >
+          {/* Home */}
           <Route
-            path="/categories"
-            element={<CategoriesPage />}
+            path="/"
+            element={<HomePage />}
           />
 
           <Route
-            path="/orders"
-            element={
-              <ProtectedRoute>
-                <OrdersPage />
-              </ProtectedRoute>
-            }
+            path="/home"
+            element={<HomePage />}
+          />
+
+          {/* Offers */}
+          <Route
+            path="/offers"
+            element={<OffersPage />}
+          />
+
+          <Route
+            path="/best-sellers"
+            element={<BestSellersPage />}
+          />
+
+          {/* Main Layout Pages */}
+          <Route
+            element={<MainLayout />}
+          >
+            <Route
+              path="/categories"
+              element={<CategoriesPage />}
+            />
+
+            <Route
+              path="/orders"
+              element={<OrdersPage />}
+            />
+          </Route>
+
+          {/* Categories */}
+          <Route
+            path="/categories/:slug"
+            element={<CategoryProductsPage />}
+          />
+
+          {/* Products */}
+          <Route
+            path="/products/:id"
+            element={<ProductDetailsPage />}
+          />
+
+          {/* User */}
+          <Route
+            path="/favorites"
+            element={<FavoritesPage />}
+          />
+
+          <Route
+            path="/profile"
+            element={<AccountPage />}
+          />
+
+          <Route
+            path="/my-data"
+            element={<MyDataPage />}
+          />
+
+          {/* Checkout */}
+          <Route
+            path="/cart"
+            element={<CheckoutPage />}
+          />
+
+          {/* Orders */}
+          <Route
+            path="/orders/:id"
+            element={<OrderDetailsPage />}
           />
         </Route>
 
+        {/* Unknown URLs */}
         <Route
-          path="/categories/:slug"
-          element={<CategoryProductsPage />}
-        />
-
-        <Route
-          path="/products/:id"
-          element={<ProductDetailsPage />}
-        />
-
-        {/* Protected User Pages */}
-        <Route
-          path="/favorites"
+          path="*"
           element={
-            <ProtectedRoute>
-              <FavoritesPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <AccountPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/my-data"
-          element={
-            <ProtectedRoute>
-              <MyDataPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/cart"
-          element={
-            <ProtectedRoute>
-              <CheckoutPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/orders/:id"
-          element={
-            <ProtectedRoute>
-              <OrderDetailsPage />
-            </ProtectedRoute>
+            <Navigate
+              to="/"
+              replace
+            />
           }
         />
       </Routes>

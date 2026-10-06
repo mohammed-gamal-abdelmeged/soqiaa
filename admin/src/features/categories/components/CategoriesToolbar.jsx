@@ -1,47 +1,224 @@
-import { Plus, Search } from "lucide-react";
+import {
+  ArrowLeft,
+  Plus,
+  Search,
+  X,
+} from "lucide-react";
 
 export default function CategoriesToolbar({
   search,
   onSearchChange,
+  onSearchSubmit,
+  onSearchClear,
   status,
   onStatusChange,
   onAddCategory,
 }) {
+  function handleSubmit(
+    event,
+  ) {
+    event.preventDefault();
+
+    onSearchSubmit();
+  }
+
   return (
     <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
       <div className="flex flex-1 flex-col gap-3 sm:flex-row">
-        <div className="relative w-full sm:max-w-sm">
-          <Search
-            size={18}
-            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-          />
+        {/* Search */}
+        <form
+          onSubmit={
+            handleSubmit
+          }
+          className="
+            flex
+            min-w-0
+            flex-1
+            overflow-hidden
+            rounded-xl
+            border
+            border-slate-200
+            bg-white
+            transition
+            focus-within:border-violet-400
+            focus-within:ring-2
+            focus-within:ring-violet-100
 
-          <input
-            value={search}
-            onChange={(event) => onSearchChange(event.target.value)}
-            type="search"
-            placeholder="ابحث عن قسم..."
-            className="h-11 w-full rounded-xl border border-slate-200 bg-white pr-10 pl-4 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
-          />
-        </div>
-
-        <select
-          value={status}
-          onChange={(event) => onStatusChange(event.target.value)}
-          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 sm:w-40"
+            sm:max-w-sm
+          "
         >
-          <option value="all">الكل</option>
-          <option value="active">نشط</option>
-          <option value="inactive">غير نشط</option>
+          <div className="relative min-w-0 flex-1">
+            <Search
+              size={18}
+              className="
+                pointer-events-none
+                absolute
+                right-3
+                top-1/2
+                -translate-y-1/2
+                text-slate-400
+              "
+            />
+
+            <input
+              type="text"
+              value={
+                search
+              }
+              onChange={(
+                event,
+              ) =>
+                onSearchChange(
+                  event.target
+                    .value,
+                )
+              }
+              placeholder="ابحث عن قسم..."
+              autoComplete="off"
+              className="
+                h-11
+                w-full
+                bg-transparent
+                pr-10
+                pl-10
+                text-sm
+                text-slate-800
+                outline-none
+                placeholder:text-slate-400
+              "
+            />
+
+            {search && (
+              <button
+                type="button"
+                onClick={
+                  onSearchClear
+                }
+                aria-label="مسح البحث"
+                title="مسح البحث"
+                className="
+                  absolute
+                  left-2
+                  top-1/2
+                  -translate-y-1/2
+                  rounded-lg
+                  p-1.5
+                  text-slate-400
+                  transition
+                  hover:bg-slate-100
+                  hover:text-slate-700
+                "
+              >
+                <X
+                  size={15}
+                />
+              </button>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            aria-label="تنفيذ البحث"
+            title="بحث"
+            className="
+              flex
+              w-12
+              shrink-0
+              items-center
+              justify-center
+              border-r
+              border-violet-600
+              bg-violet-600
+              text-white
+              transition
+              hover:bg-violet-700
+              focus:outline-none
+              focus:ring-2
+              focus:ring-violet-300
+              focus:ring-inset
+            "
+          >
+            <ArrowLeft
+              size={19}
+            />
+          </button>
+        </form>
+
+        {/* Status Filter */}
+        <select
+          value={
+            status
+          }
+          onChange={(
+            event,
+          ) =>
+            onStatusChange(
+              event.target
+                .value,
+            )
+          }
+          className="
+            h-11
+            w-full
+            rounded-xl
+            border
+            border-slate-200
+            bg-white
+            px-4
+            text-sm
+            text-slate-700
+            outline-none
+            transition
+            focus:border-emerald-500
+            focus:ring-2
+            focus:ring-emerald-100
+
+            sm:w-40
+          "
+        >
+          <option value="all">
+            الكل
+          </option>
+
+          <option value="active">
+            نشط
+          </option>
+
+          <option value="inactive">
+            غير نشط
+          </option>
         </select>
       </div>
 
+      {/* Add Category */}
       <button
         type="button"
-        onClick={onAddCategory}
-        className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white transition hover:bg-emerald-800 sm:w-auto"
+        onClick={
+          onAddCategory
+        }
+        className="
+          flex
+          h-11
+          w-full
+          items-center
+          justify-center
+          gap-2
+          rounded-xl
+          bg-emerald-700
+          px-4
+          text-sm
+          font-semibold
+          text-white
+          transition
+          hover:bg-emerald-800
+
+          sm:w-auto
+        "
       >
-        <Plus size={18} />
+        <Plus
+          size={18}
+        />
+
         إضافة قسم
       </button>
     </div>

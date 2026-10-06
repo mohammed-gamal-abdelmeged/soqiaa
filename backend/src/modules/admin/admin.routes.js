@@ -1,14 +1,35 @@
-import { Router } from "express";
+import {
+  Router,
+} from "express";
 
-import { authenticate } from "../../middlewares/authenticate.js";
-import { authorizeRole } from "../../middlewares/authorizeRole.js";
-import { requireCsrf } from "../../middlewares/requireCsrf.js";
-import { validate } from "../../middlewares/validate.js";
+import {
+  authenticate,
+} from "../../middlewares/authenticate.js";
+
+import {
+  authorizeRole,
+} from "../../middlewares/authorizeRole.js";
+
+import {
+  requireCsrf,
+} from "../../middlewares/requireCsrf.js";
+
+import {
+  validate,
+} from "../../middlewares/validate.js";
 
 import {
   accessCheck,
   dashboard,
 } from "./admin.controller.js";
+
+import {
+  createAdminAccountController,
+} from "./adminAccounts.controller.js";
+
+import {
+  createAdminAccountSchema,
+} from "./adminAccounts.validation.js";
 
 import {
   getAdminOrderByIdController,
@@ -22,7 +43,8 @@ import {
   updateOrderStatusSchema,
 } from "../orders/orders.validation.js";
 
-const router = Router();
+const router =
+  Router();
 
 /*
 |--------------------------------------------------------------------------
@@ -32,9 +54,14 @@ const router = Router();
 
 router.get(
   "/access-check",
+
   authenticate,
-  authorizeRole("ADMIN"),
-  accessCheck
+
+  authorizeRole(
+    "ADMIN",
+  ),
+
+  accessCheck,
 );
 
 /*
@@ -45,9 +72,46 @@ router.get(
 
 router.get(
   "/dashboard",
+
   authenticate,
-  authorizeRole("ADMIN"),
-  dashboard
+
+  authorizeRole(
+    "ADMIN",
+  ),
+
+  dashboard,
+);
+
+/*
+|--------------------------------------------------------------------------
+| Create Admin Account
+|--------------------------------------------------------------------------
+|
+| Only an already authenticated ADMIN
+| can create another ADMIN account.
+|
+| Client cannot choose the role.
+| Backend always creates role = ADMIN.
+|--------------------------------------------------------------------------
+*/
+
+router.post(
+  "/accounts",
+
+  authenticate,
+
+  authorizeRole(
+    "ADMIN",
+  ),
+
+  requireCsrf,
+
+  validate(
+    createAdminAccountSchema,
+    "body",
+  ),
+
+  createAdminAccountController,
 );
 
 /*
@@ -65,15 +129,19 @@ router.get(
 
 router.get(
   "/orders",
+
   authenticate,
-  authorizeRole("ADMIN"),
+
+  authorizeRole(
+    "ADMIN",
+  ),
 
   validate(
     adminOrdersQuerySchema,
-    "query"
+    "query",
   ),
 
-  getAdminOrdersController
+  getAdminOrdersController,
 );
 
 /*
@@ -84,15 +152,19 @@ router.get(
 
 router.get(
   "/orders/:id",
+
   authenticate,
-  authorizeRole("ADMIN"),
+
+  authorizeRole(
+    "ADMIN",
+  ),
 
   validate(
     orderIdParamsSchema,
-    "params"
+    "params",
   ),
 
-  getAdminOrderByIdController
+  getAdminOrderByIdController,
 );
 
 /*
@@ -103,21 +175,26 @@ router.get(
 
 router.patch(
   "/orders/:id/status",
+
   authenticate,
-  authorizeRole("ADMIN"),
+
+  authorizeRole(
+    "ADMIN",
+  ),
+
   requireCsrf,
 
   validate(
     orderIdParamsSchema,
-    "params"
+    "params",
   ),
 
   validate(
     updateOrderStatusSchema,
-    "body"
+    "body",
   ),
 
-  updateOrderStatusController
+  updateOrderStatusController,
 );
 
 export default router;

@@ -4,6 +4,8 @@ import {
   useOrders,
 } from "../hooks/useOrders";
 
+import OrdersPageSkeleton from "../../../components/loaders/OrdersPageSkeleton";
+
 function OrdersPage() {
   const {
     data: orders = [],
@@ -12,34 +14,22 @@ function OrdersPage() {
     error,
   } = useOrders();
 
-  if (isPending) {
-    return (
-      <div
-        className="
-          flex min-h-[60vh]
-          items-center justify-center
-        "
-      >
-        <span
-          className="
-            h-8 w-8 animate-spin
-            rounded-full border-2
-            border-gray-200
-            border-t-secondary
-          "
-        />
-      </div>
-    );
-  }
-
   if (isError) {
     return (
       <div
         className="
-          mx-auto flex min-h-[60vh]
-          w-full max-w-md
-          items-center justify-center
+          mx-auto
+          flex
+          min-h-[60vh]
+          w-full
+          max-w-md
+          items-center
+          justify-center
           px-5
+
+          md:max-w-3xl
+
+          lg:max-w-[1180px]
         "
       >
         <div className="text-center">
@@ -59,34 +49,99 @@ function OrdersPage() {
   return (
     <div
       className="
-        mx-auto w-full max-w-md
-        px-5 pb-6 pt-5
+        mx-auto
+        w-full
+        max-w-md
+        px-5
+        pb-6
+        pt-5
+
+        md:max-w-5xl
+        md:px-6
+        md:pb-10
+        md:pt-8
+
+        lg:max-w-[1180px]
+        lg:pt-10
       "
     >
-      <section className="mb-6">
-        <h1 className="text-3xl font-bold text-primary">
+      <section
+        className="
+          mb-6
+
+          md:mb-8
+        "
+      >
+        <h1
+          className="
+            text-3xl
+            font-bold
+            text-primary
+
+            md:text-4xl
+          "
+        >
           طلباتي
         </h1>
 
-        <p className="mt-2 text-text-muted">
+        <p
+          className="
+            mt-2
+            text-text-muted
+
+            md:text-base
+          "
+        >
           تابع طلباتك واطلب تاني بسهولة.
         </p>
       </section>
 
-      {orders.length > 0 ? (
-        <section className="space-y-4">
+      {isPending ? (
+        <OrdersPageSkeleton />
+      ) : orders.length > 0 ? (
+        <section
+          className="
+            space-y-4
+
+            md:grid
+            md:grid-cols-2
+            md:gap-5
+            md:space-y-0
+
+            lg:gap-6
+          "
+        >
           {orders.map(
             (order) => (
               <OrderCard
-                key={order.id}
-                order={order}
+                key={
+                  order.id
+                }
+                order={
+                  order
+                }
               />
             ),
           )}
         </section>
       ) : (
-        <div className="py-20 text-center">
-          <h2 className="text-xl font-bold text-primary">
+        <div
+          className="
+            py-20
+            text-center
+
+            md:py-28
+          "
+        >
+          <h2
+            className="
+              text-xl
+              font-bold
+              text-primary
+
+              md:text-2xl
+            "
+          >
             مفيش طلبات لسه
           </h2>
 

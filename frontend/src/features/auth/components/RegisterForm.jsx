@@ -122,7 +122,9 @@ function RegisterForm() {
     setTouched(
       (current) => ({
         ...current,
-        [name]: true,
+
+        [name]:
+          true,
       }),
     );
 
@@ -177,18 +179,23 @@ function RegisterForm() {
         return;
       }
 
-      setIsSubmitting(true);
+      setIsSubmitting(
+        true,
+      );
 
       try {
         await register({
           fullName:
-            formData.fullName.trim(),
+            formData.fullName
+              .trim(),
 
           phone:
-            formData.phone.trim(),
+            formData.phone
+              .trim(),
 
           address:
-            formData.address.trim(),
+            formData.address
+              .trim(),
 
           password:
             formData.password,
@@ -367,8 +374,10 @@ function RegisterForm() {
               isSubmitting
             }
             className="
-              h-5 w-5 cursor-pointer
-              rounded border-2
+              h-5 w-5
+              cursor-pointer
+              rounded
+              border-2
               border-outline
               accent-secondary
               disabled:cursor-not-allowed
@@ -378,7 +387,11 @@ function RegisterForm() {
 
           <label
             htmlFor="termsAccepted"
-            className="cursor-pointer text-base text-text-muted"
+            className="
+              cursor-pointer
+              text-base
+              text-text-muted
+            "
           >
             أنا موافق على{" "}
 
@@ -389,7 +402,11 @@ function RegisterForm() {
                   true,
                 )
               }
-              className="font-semibold text-secondary hover:underline"
+              className="
+                font-semibold
+                text-secondary
+                hover:underline
+              "
             >
               الشروط والأحكام
             </button>
@@ -410,28 +427,33 @@ function RegisterForm() {
         disabled={
           isSubmitting
         }
+        aria-busy={
+          isSubmitting
+        }
         className="
-          mt-6 flex h-14 w-full
-          items-center justify-center
-          gap-2 rounded-full
+          mt-6
+          flex
+          h-14
+          w-full
+          items-center
+          justify-center
+          gap-2
+          rounded-full
           bg-[#4CAF50]
-          text-xl font-semibold
+          text-xl
+          font-semibold
           text-white
           shadow-[0_4px_20px_rgba(0,27,61,0.05)]
           transition
           hover:opacity-90
           active:scale-[0.98]
-          disabled:cursor-not-allowed
+          disabled:cursor-wait
           disabled:opacity-60
           disabled:active:scale-100
         "
       >
         {isSubmitting ? (
-          <>
-            <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-
-            جاري إنشاء الحساب...
-          </>
+          "جاري إنشاء الحساب..."
         ) : (
           <>
             إنشاء الحساب
@@ -580,9 +602,12 @@ function RegisterForm() {
                 )
               }
               className="
-                w-full rounded-xl
-                bg-secondary py-3
-                font-semibold text-white
+                w-full
+                rounded-xl
+                bg-secondary
+                py-3
+                font-semibold
+                text-white
                 transition
                 hover:opacity-90
                 active:scale-[0.98]

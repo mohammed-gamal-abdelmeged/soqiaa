@@ -12,6 +12,7 @@ import adminRouter from "./modules/admin/admin.routes.js";
 import categoriesRouter from "./modules/categories/categories.routes.js";
 import productsRouter from "./modules/products/products.routes.js";
 import offersRouter from "./modules/offers/offers.routes.js";
+import couponsRouter from "./modules/coupons/coupons.routes.js";
 import cartRouter from "./modules/cart/cart.routes.js";
 import favoritesRouter from "./modules/favorites/favorites.routes.js";
 import ordersRouter from "./modules/orders/orders.routes.js";
@@ -29,9 +30,13 @@ const app = express();
 |--------------------------------------------------------------------------
 */
 
-app.disable("x-powered-by");
+app.disable(
+  "x-powered-by",
+);
 
-app.use(helmet());
+app.use(
+  helmet(),
+);
 
 const allowedOrigins = [
   env.frontendOrigin,
@@ -40,7 +45,10 @@ const allowedOrigins = [
 
 app.use(
   cors({
-    origin(origin, callback) {
+    origin(
+      origin,
+      callback,
+    ) {
       /*
        * Requests such as Postman, curl,
        * server-to-server requests may not
@@ -49,24 +57,24 @@ app.use(
       if (!origin) {
         return callback(
           null,
-          true
+          true,
         );
       }
 
       if (
         allowedOrigins.includes(
-          origin
+          origin,
         )
       ) {
         return callback(
           null,
-          true
+          true,
         );
       }
 
       return callback(
         null,
-        false
+        false,
       );
     },
 
@@ -78,8 +86,9 @@ app.use(
       "DELETE",
     ],
 
-    credentials: true,
-  })
+    credentials:
+      true,
+  }),
 );
 
 /*
@@ -93,25 +102,31 @@ app.use(
   express.static(
     path.resolve(
       "storage",
-      "uploads"
+      "uploads",
     ),
     {
-      dotfiles: "deny",
+      dotfiles:
+        "deny",
 
-      index: false,
+      index:
+        false,
 
-      maxAge: "1y",
+      maxAge:
+        "1y",
 
-      immutable: true,
+      immutable:
+        true,
 
-      setHeaders(res) {
+      setHeaders(
+        res,
+      ) {
         res.setHeader(
           "Cross-Origin-Resource-Policy",
-          "cross-origin"
+          "cross-origin",
         );
       },
-    }
-  )
+    },
+  ),
 );
 
 /*
@@ -121,20 +136,24 @@ app.use(
 */
 
 app.use(
-  cookieParser()
+  cookieParser(),
 );
 
 app.use(
   express.json({
-    limit: "100kb",
-  })
+    limit:
+      "100kb",
+  }),
 );
 
 app.use(
   express.urlencoded({
-    extended: true,
-    limit: "100kb",
-  })
+    extended:
+      true,
+
+    limit:
+      "100kb",
+  }),
 );
 
 /*
@@ -145,16 +164,21 @@ app.use(
 
 app.get(
   "/api/v1/health",
-  (req, res) => {
+
+  (
+    req,
+    res,
+  ) => {
     res
       .status(200)
       .json({
-        success: true,
+        success:
+          true,
 
         message:
           "Soqiaa API is running",
       });
-  }
+  },
 );
 
 /*
@@ -165,12 +189,12 @@ app.get(
 
 app.use(
   "/api/v1/auth",
-  authRouter
+  authRouter,
 );
 
 app.use(
   "/api/v1/admin",
-  adminRouter
+  adminRouter,
 );
 
 /*
@@ -180,7 +204,7 @@ app.use(
  */
 app.use(
   "/api/v1",
-  usersRouter
+  usersRouter,
 );
 
 /*
@@ -192,7 +216,7 @@ app.use(
  */
 app.use(
   "/api/v1",
-  categoriesRouter
+  categoriesRouter,
 );
 
 /*
@@ -205,7 +229,7 @@ app.use(
  */
 app.use(
   "/api/v1",
-  productsRouter
+  productsRouter,
 );
 
 /*
@@ -216,7 +240,18 @@ app.use(
  */
 app.use(
   "/api/v1",
-  offersRouter
+  offersRouter,
+);
+
+/*
+ * Coupons router contains:
+ *
+ * /admin/coupons
+ * /admin/coupons/:id
+ */
+app.use(
+  "/api/v1",
+  couponsRouter,
 );
 
 /*
@@ -228,7 +263,7 @@ app.use(
  */
 app.use(
   "/api/v1",
-  cartRouter
+  cartRouter,
 );
 
 /*
@@ -239,7 +274,7 @@ app.use(
  */
 app.use(
   "/api/v1",
-  favoritesRouter
+  favoritesRouter,
 );
 
 /*
@@ -251,7 +286,7 @@ app.use(
  */
 app.use(
   "/api/v1",
-  ordersRouter
+  ordersRouter,
 );
 
 /*
@@ -261,7 +296,7 @@ app.use(
  */
 app.use(
   "/api/v1",
-  customersRouter
+  customersRouter,
 );
 
 /*
@@ -270,8 +305,12 @@ app.use(
 |--------------------------------------------------------------------------
 */
 
-app.use(notFound);
+app.use(
+  notFound,
+);
 
-app.use(errorHandler);
+app.use(
+  errorHandler,
+);
 
 export default app;

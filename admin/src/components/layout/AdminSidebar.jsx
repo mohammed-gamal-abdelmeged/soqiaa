@@ -1,53 +1,84 @@
 import {
   BadgePercent,
   Boxes,
-  House,
   LayoutDashboard,
   LogOut,
   Package,
+  ShieldPlus,
   ShoppingBag,
+  TicketPercent,
   TrendingUp,
   Users,
   X,
 } from "lucide-react";
 
-import { NavLink } from "react-router-dom";
+import {
+  NavLink,
+} from "react-router-dom";
 
 const navigationItems = [
   {
-    label: "لوحة التحكم",
+    label:
+      "لوحة التحكم",
     to: "/",
-    icon: LayoutDashboard,
+    icon:
+      LayoutDashboard,
   },
   {
-    label: "الأقسام",
+    label:
+      "الأقسام",
     to: "/categories",
-    icon: Boxes,
+    icon:
+      Boxes,
   },
   {
-    label: "المنتجات",
+    label:
+      "المنتجات",
     to: "/products",
-    icon: Package,
+    icon:
+      Package,
   },
   {
-    label: "العروض",
+    label:
+      "العروض",
     to: "/offers",
-    icon: BadgePercent,
+    icon:
+      BadgePercent,
   },
   {
-    label: "الأكثر مبيعاً",
+    label:
+      "كوبونات الخصم",
+    to: "/coupons",
+    icon:
+      TicketPercent,
+  },
+  {
+    label:
+      "الأكثر مبيعاً",
     to: "/best-sellers",
-    icon: TrendingUp,
+    icon:
+      TrendingUp,
   },
   {
-    label: "الطلبات",
+    label:
+      "الطلبات",
     to: "/orders",
-    icon: ShoppingBag,
+    icon:
+      ShoppingBag,
   },
   {
-    label: "العملاء",
+    label:
+      "العملاء",
     to: "/customers",
-    icon: Users,
+    icon:
+      Users,
+  },
+  {
+    label:
+      "إضافة حساب أدمن",
+    to: "/admin-accounts/new",
+    icon:
+      ShieldPlus,
   },
 ];
 
@@ -62,7 +93,9 @@ export default function AdminSidebar({
         <button
           type="button"
           aria-label="إغلاق القائمة"
-          onClick={onClose}
+          onClick={
+            onClose
+          }
           className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-[1px] lg:hidden"
         />
       )}
@@ -75,7 +108,11 @@ export default function AdminSidebar({
           bg-[#071d36]
           transition-transform duration-300
           lg:translate-x-0
-          ${isOpen ? "translate-x-0" : "translate-x-full"}
+          ${
+            isOpen
+              ? "translate-x-0"
+              : "translate-x-full"
+          }
         `}
       >
         <div className="flex h-full flex-col p-4">
@@ -86,49 +123,88 @@ export default function AdminSidebar({
 
             <button
               type="button"
-              onClick={onClose}
+              onClick={
+                onClose
+              }
               className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
             >
-              <X size={20} />
+              <X
+                size={20}
+              />
             </button>
           </div>
 
           <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
-            {navigationItems.map((item) => {
-              const Icon = item.icon;
+            {navigationItems.map(
+              (item) => {
+                const Icon =
+                  item.icon;
 
-              return (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.to === "/"}
-                  onClick={onClose}
-                  className={({ isActive }) =>
-                    [
-                      "flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-emerald-600 text-white"
-                        : "text-slate-300 hover:bg-white/8 hover:text-white",
-                    ].join(" ")
-                  }
-                >
-                  <Icon size={19} strokeWidth={1.8} />
+                return (
+                  <NavLink
+                    key={
+                      item.to
+                    }
+                    to={
+                      item.to
+                    }
+                    end={
+                      item.to ===
+                      "/"
+                    }
+                    onClick={
+                      onClose
+                    }
+                    className={({
+                      isActive,
+                    }) =>
+                      [
+                        "flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium transition-colors",
 
-                  <span>{item.label}</span>
-                </NavLink>
-              );
-            })}
+                        isActive
+                          ? "bg-emerald-600 text-white"
+                          : "text-slate-300 hover:bg-white/8 hover:text-white",
+                      ].join(
+                        " ",
+                      )
+                    }
+                  >
+                    <Icon
+                      size={19}
+                      strokeWidth={
+                        1.8
+                      }
+                    />
+
+                    <span>
+                      {
+                        item.label
+                      }
+                    </span>
+                  </NavLink>
+                );
+              },
+            )}
           </nav>
 
           <div className="border-t border-white/10 pt-3">
             <button
               type="button"
-              onClick={onLogout}
+              onClick={
+                onLogout
+              }
               className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium text-slate-300 transition-colors hover:bg-red-500/10 hover:text-red-300"
             >
-              <LogOut size={19} strokeWidth={1.8} />
+              <LogOut
+                size={19}
+                strokeWidth={
+                  1.8
+                }
+              />
 
-              <span>الخروج</span>
+              <span>
+                الخروج
+              </span>
             </button>
           </div>
         </div>

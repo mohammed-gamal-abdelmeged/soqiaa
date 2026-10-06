@@ -14,10 +14,12 @@ import CategoryDetailsPage from "../features/categories/pages/CategoryDetailsPag
 import ProductsPage from "../features/products/pages/ProductsPage";
 import ProductFormPage from "../features/products/pages/ProductFormPage";
 import OffersPage from "../features/offers/pages/OffersPage";
+import CouponsPage from "../features/coupons/pages/CouponsPage";
 import BestSellersPage from "../features/bestSellers/pages/BestSellersPage";
 import OrdersPage from "../features/orders/pages/OrdersPage";
 import OrderDetailsPage from "../features/orders/pages/OrderDetailsPage";
 import CustomersPage from "../features/customers/pages/CustomersPage";
+import CreateAdminAccountPage from "../features/adminAccounts/pages/CreateAdminAccountPage";
 
 import AdminLayout from "../layouts/AdminLayout";
 
@@ -28,7 +30,9 @@ export default function AppRouter() {
         {/* Admin Auth */}
         <Route
           path="/login"
-          element={<AdminLoginPage />}
+          element={
+            <AdminLoginPage />
+          }
         />
 
         {/* Protected Admin Area */}
@@ -41,22 +45,30 @@ export default function AppRouter() {
         >
           <Route
             index
-            element={<DashboardPage />}
+            element={
+              <DashboardPage />
+            }
           />
 
           <Route
             path="/categories"
-            element={<CategoriesPage />}
+            element={
+              <CategoriesPage />
+            }
           />
 
           <Route
             path="/categories/:categorySlug"
-            element={<CategoryDetailsPage />}
+            element={
+              <CategoryDetailsPage />
+            }
           />
 
           <Route
             path="/products"
-            element={<ProductsPage />}
+            element={
+              <ProductsPage />
+            }
           />
 
           <Route
@@ -75,27 +87,51 @@ export default function AppRouter() {
 
           <Route
             path="/offers"
-            element={<OffersPage />}
+            element={
+              <OffersPage />
+            }
+          />
+
+          <Route
+            path="/coupons"
+            element={
+              <CouponsPage />
+            }
           />
 
           <Route
             path="/best-sellers"
-            element={<BestSellersPage />}
+            element={
+              <BestSellersPage />
+            }
           />
 
           <Route
             path="/orders"
-            element={<OrdersPage />}
+            element={
+              <OrdersPage />
+            }
           />
 
           <Route
             path="/orders/:orderId"
-            element={<OrderDetailsPage />}
+            element={
+              <OrderDetailsPage />
+            }
           />
 
           <Route
             path="/customers"
-            element={<CustomersPage />}
+            element={
+              <CustomersPage />
+            }
+          />
+
+          <Route
+            path="/admin-accounts/new"
+            element={
+              <CreateAdminAccountPage />
+            }
           />
         </Route>
       </Routes>

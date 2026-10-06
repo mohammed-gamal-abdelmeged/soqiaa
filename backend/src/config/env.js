@@ -7,14 +7,14 @@ import * as z from "zod";
 */
 
 function isValidTimeZone(
-  value
+  value,
 ) {
   try {
     new Intl.DateTimeFormat(
       "en-US",
       {
         timeZone: value,
-      }
+      },
     ).format();
 
     return true;
@@ -29,113 +29,127 @@ function isValidTimeZone(
 |--------------------------------------------------------------------------
 */
 
-const envSchema = z.object({
-  NODE_ENV: z
-    .enum([
-      "development",
-      "test",
-      "production",
-    ])
-    .default("development"),
-
-  PORT: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(65535)
-    .default(5000),
-
-  DATABASE_URL: z
-    .string()
-    .min(
-      1,
-      "DATABASE_URL is required"
-    )
-    .refine(
-      (value) =>
-        value.startsWith(
-          "postgresql://"
-        ) ||
-        value.startsWith(
-          "postgres://"
+const envSchema =
+  z.object({
+    NODE_ENV:
+      z.enum([
+        "development",
+        "test",
+        "production",
+      ])
+        .default(
+          "development",
         ),
-      "DATABASE_URL must be a PostgreSQL connection URL"
-    ),
 
-  FRONTEND_ORIGIN:
-    z.url(),
+    PORT:
+      z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(65535)
+        .default(5000),
 
-  ADMIN_ORIGIN:
-    z.url(),
+    DATABASE_URL:
+      z.string()
+        .min(
+          1,
+          "DATABASE_URL is required",
+        )
+        .refine(
+          (value) =>
+            value.startsWith(
+              "postgresql://",
+            ) ||
+            value.startsWith(
+              "postgres://",
+            ),
+          "DATABASE_URL must be a PostgreSQL connection URL",
+        ),
 
-  ASSET_BASE_URL:
-    z
-      .url()
-      .optional(),
+    FRONTEND_ORIGIN:
+      z.url(),
 
-  SESSION_COOKIE_NAME:
-    z
-      .string()
-      .min(1)
-      .default(
-        "soqiaa_session"
-      ),
+    ADMIN_ORIGIN:
+      z.url(),
 
-  SESSION_TTL_DAYS:
-    z.coerce
-      .number()
-      .int()
-      .min(1)
-      .max(30)
-      .default(7),
+    ASSET_BASE_URL:
+      z.url()
+        .optional(),
 
-  DELIVERY_FEE:
-    z.coerce
-      .number()
-      .min(
-        0,
-        "DELIVERY_FEE must be zero or greater"
-      )
-      .max(
-        10000,
-        "DELIVERY_FEE is too large"
-      )
-      .default(30),
+    SESSION_COOKIE_NAME:
+      z.string()
+        .min(1)
+        .default(
+          "soqiaa_session",
+        ),
 
-  STORE_TIME_ZONE:
-    z
-      .string()
-      .trim()
-      .min(
-        1,
-        "STORE_TIME_ZONE is required"
-      )
-      .refine(
-        isValidTimeZone,
-        {
-          message:
-            "STORE_TIME_ZONE must be a valid IANA time zone",
-        }
-      )
-      .default(
-        "Africa/Cairo"
-      ),
-});
+    SESSION_TTL_DAYS:
+      z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(30)
+        .default(7),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Delivery Fee
+    |--------------------------------------------------------------------------
+    |
+    | رسوم التوصيل لم تعد ثابتة.
+    | سيتم تحديدها لاحقًا حسب مكان العميل.
+    |
+    | لذلك قيمة الطلب المسجلة حاليًا
+    | لا تتضمن أي رسوم توصيل.
+    |--------------------------------------------------------------------------
+    */
+
+    DELIVERY_FEE:
+      z.coerce
+        .number()
+        .min(
+          0,
+          "DELIVERY_FEE must be zero or greater",
+        )
+        .max(
+          10000,
+          "DELIVERY_FEE is too large",
+        )
+        .default(0),
+
+    STORE_TIME_ZONE:
+      z.string()
+        .trim()
+        .min(
+          1,
+          "STORE_TIME_ZONE is required",
+        )
+        .refine(
+          isValidTimeZone,
+          {
+            message:
+              "STORE_TIME_ZONE must be a valid IANA time zone",
+          },
+        )
+        .default(
+          "Africa/Cairo",
+        ),
+  });
 
 const result =
   envSchema.safeParse(
-    process.env
+    process.env,
   );
 
 if (!result.success) {
   console.error(
-    "Invalid environment variables:"
+    "Invalid environment variables:",
   );
 
   console.error(
     z.prettifyError(
-      result.error
-    )
+      result.error,
+    ),
   );
 
   process.exit(1);
