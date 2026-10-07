@@ -1,4 +1,9 @@
 import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
   Link,
   Navigate,
 } from "react-router-dom";
@@ -9,10 +14,64 @@ import {
   useAuth,
 } from "../../auth/context/useAuth";
 
+const LANDING_TITLE =
+  "مشترياتك بقت أسهل مع سوقيا";
+
 function LandingPage() {
   const {
     isAuthenticated,
   } = useAuth();
+
+  const [
+    displayedTitle,
+    setDisplayedTitle,
+  ] = useState("");
+
+  useEffect(() => {
+    const prefersReducedMotion =
+      window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+
+    if (prefersReducedMotion) {
+      setDisplayedTitle(
+        LANDING_TITLE,
+      );
+
+      return;
+    }
+
+    setDisplayedTitle("");
+
+    let currentIndex = 0;
+
+    const typingInterval =
+      window.setInterval(() => {
+        currentIndex += 1;
+
+        setDisplayedTitle(
+          LANDING_TITLE.slice(
+            0,
+            currentIndex,
+          ),
+        );
+
+        if (
+          currentIndex >=
+          LANDING_TITLE.length
+        ) {
+          window.clearInterval(
+            typingInterval,
+          );
+        }
+      }, 100);
+
+    return () => {
+      window.clearInterval(
+        typingInterval,
+      );
+    };
+  }, []);
 
   if (isAuthenticated) {
     return (
@@ -129,15 +188,17 @@ function LandingPage() {
             className="
               mx-auto
               mt-6
+              min-h-[72px]
               max-w-3xl
               text-3xl
               font-extrabold
               leading-tight
 
+              md:min-h-[120px]
               md:text-5xl
             "
           >
-            مشتريات البيت بقت أسهل مع سوقيا
+            {displayedTitle}
           </h1>
 
           <p
