@@ -333,14 +333,13 @@ function CategoryProductsPage() {
           <div
             className="
               relative
-              h-32
+              aspect-[8/3]
+              w-full
               overflow-hidden
               rounded-3xl
 
-              md:h-52
               md:rounded-[30px]
 
-              lg:h-64
               lg:rounded-[34px]
             "
           >
