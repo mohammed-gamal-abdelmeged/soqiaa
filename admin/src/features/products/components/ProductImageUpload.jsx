@@ -37,9 +37,15 @@ export default function ProductImageUpload({
 
   return (
     <div>
-      <p className="mb-2 text-sm font-semibold text-slate-700">
-        صورة المنتج
-      </p>
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <p className="text-sm font-semibold text-slate-700">
+          صورة المنتج
+        </p>
+
+        <span className="text-xs font-medium text-slate-400">
+          (مقاس الصورة 1:1)
+        </span>
+      </div>
 
       <label
         className={[
