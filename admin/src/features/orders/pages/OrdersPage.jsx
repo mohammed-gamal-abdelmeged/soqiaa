@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
+  RefreshCw,
   Search,
   X,
 } from "lucide-react";
@@ -23,6 +24,7 @@ import {
 } from "../hooks/useAdminOrders";
 
 const ORDERS_PER_PAGE = 20;
+const REFRESH_COOLDOWN_MS = 15 * 1000;
 
 function getPaginationItems(
   currentPage,
@@ -117,6 +119,16 @@ export default function OrdersPage() {
     setSubmittedSearch,
   ] = useState("");
 
+  const [
+    lastManualRefreshAt,
+    setLastManualRefreshAt,
+  ] = useState(0);
+
+  const [
+    refreshCooldownLeft,
+    setRefreshCooldownLeft,
+  ] = useState(0);
+
   const {
     data: orders = [],
     pagination,
@@ -189,6 +201,89 @@ export default function OrdersPage() {
     );
   }
 
+  async function handleManualRefresh() {
+    if (
+      isFetching ||
+      refreshCooldownLeft > 0
+    ) {
+      return;
+    }
+
+    const now =
+      Date.now();
+
+    const elapsed =
+      now -
+      lastManualRefreshAt;
+
+    if (
+      lastManualRefreshAt &&
+      elapsed <
+        REFRESH_COOLDOWN_MS
+    ) {
+      setRefreshCooldownLeft(
+        Math.ceil(
+          (
+            REFRESH_COOLDOWN_MS -
+            elapsed
+          ) /
+            1000,
+        ),
+      );
+
+      return;
+    }
+
+    setLastManualRefreshAt(
+      now,
+    );
+
+    setRefreshCooldownLeft(
+      Math.ceil(
+        REFRESH_COOLDOWN_MS /
+          1000,
+      ),
+    );
+
+    await refetch();
+
+    const intervalId =
+      window.setInterval(
+        () => {
+          const remaining =
+            Math.ceil(
+              (
+                REFRESH_COOLDOWN_MS -
+                (
+                  Date.now() -
+                  now
+                )
+              ) /
+                1000,
+            );
+
+          if (
+            remaining <= 0
+          ) {
+            window.clearInterval(
+              intervalId,
+            );
+
+            setRefreshCooldownLeft(
+              0,
+            );
+
+            return;
+          }
+
+          setRefreshCooldownLeft(
+            remaining,
+          );
+        },
+        1000,
+      );
+  }
+
   function handlePageChange(
     nextPage,
   ) {
@@ -243,15 +338,60 @@ export default function OrdersPage() {
     <div className="space-y-6">
       {/* Header */}
       <section className="flex flex-col gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
-            إدارة الطلبات
-          </h1>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
+              إدارة الطلبات
+            </h1>
 
-          <p className="mt-1 text-sm text-slate-500">
-            متابعة وإدارة جميع طلبات
-            متجر سوقيا
-          </p>
+            <p className="mt-1 text-sm text-slate-500">
+              متابعة وإدارة جميع طلبات
+              متجر سوقيا
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={
+              handleManualRefresh
+            }
+            disabled={
+              isFetching ||
+              refreshCooldownLeft >
+                0
+            }
+            className={[
+              "inline-flex min-h-11 items-center justify-center gap-2",
+              "rounded-xl border border-slate-200 bg-white px-4",
+              "text-sm font-semibold text-slate-700 shadow-sm transition",
+              "hover:bg-slate-50 hover:text-slate-900",
+              "focus:outline-none focus:ring-2 focus:ring-violet-200",
+              "disabled:cursor-not-allowed disabled:opacity-60",
+              "sm:shrink-0",
+            ].join(" ")}
+            title={
+              refreshCooldownLeft >
+              0
+                ? `يمكنك التحديث مرة أخرى بعد ${refreshCooldownLeft} ثانية`
+                : "تحديث بيانات الصفحة"
+            }
+          >
+            <RefreshCw
+              size={17}
+              className={
+                isFetching
+                  ? "animate-spin"
+                  : ""
+              }
+            />
+
+            {isFetching
+              ? "جاري التحديث..."
+              : refreshCooldownLeft >
+                  0
+                ? `التحديث متاح بعد ${refreshCooldownLeft}ث`
+                : "حدث بيانات الصفحة"}
+          </button>
         </div>
 
         {/* Mobile + Tablet Search */}
