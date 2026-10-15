@@ -6,51 +6,18 @@ import {
   Link,
 } from "react-router-dom";
 
-const getCardPattern = (
-  index,
-) => {
-  const position =
-    index % 3;
-
-  if (
-    position === 0
-  ) {
-    return `
-      col-span-2
-      h-48
-
-      md:col-span-1
-      md:h-52
-
-      lg:h-56
-    `;
-  }
-
-  return `
-    col-span-1
-    h-40
-
-    md:h-52
-
-    lg:h-56
-  `;
-};
-
 function CategoryCard({
   category,
   index,
 }) {
-  const pattern =
-    getCardPattern(
-      index,
-    );
-
   return (
     <Link
       to={`/categories/${category.slug}`}
       className={`
         group
         relative
+        col-span-1
+        aspect-square
         overflow-hidden
         rounded-3xl
         shadow-[0_4px_20px_rgba(0,27,61,0.05)]
@@ -61,8 +28,6 @@ function CategoryCard({
         md:rounded-[28px]
 
         lg:rounded-[30px]
-
-        ${pattern}
       `}
     >
       <img

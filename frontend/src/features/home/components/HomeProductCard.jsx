@@ -65,7 +65,8 @@ function HomeProductCard({
           className="
             relative
             flex
-            h-32
+            aspect-square
+            w-full
             items-center
             justify-center
             overflow-hidden
@@ -73,11 +74,9 @@ function HomeProductCard({
             bg-[#f6f8f6]
             p-4
 
-            md:h-40
             md:rounded-[20px]
             md:p-5
 
-            lg:h-44
             lg:p-6
           "
         >
