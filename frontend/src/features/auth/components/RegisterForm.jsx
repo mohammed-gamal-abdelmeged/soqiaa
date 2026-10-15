@@ -2,10 +2,16 @@ import { useState } from "react";
 
 import {
   ArrowLeft,
+  CheckCircle2,
+  Copy,
+  Eye,
+  EyeOff,
   Lock,
   MapPin,
   RotateCcwKey,
+  ShieldCheck,
   Smartphone,
+  TriangleAlert,
   User,
 } from "lucide-react";
 
@@ -69,6 +75,65 @@ function RegisterForm() {
     isTermsOpen,
     setIsTermsOpen,
   ] = useState(false);
+
+  const [
+    registrationComplete,
+    setRegistrationComplete,
+  ] = useState(false);
+
+  const [
+    createdPassword,
+    setCreatedPassword,
+  ] = useState("");
+
+  const [
+    isCreatedPasswordVisible,
+    setIsCreatedPasswordVisible,
+  ] = useState(true);
+
+  const [
+    isPasswordCopied,
+    setIsPasswordCopied,
+  ] = useState(false);
+
+  const handleCopyPassword =
+    async () => {
+      try {
+        await navigator.clipboard.writeText(
+          createdPassword,
+        );
+
+        setIsPasswordCopied(
+          true,
+        );
+
+        showSuccess(
+          "تم نسخ الباسورد",
+        );
+      } catch {
+        showError(
+          "تعذر نسخ الباسورد، انسخه يدويًا",
+        );
+      }
+    };
+
+  const handleContinueToLogin =
+    () => {
+      setCreatedPassword(
+        "",
+      );
+
+      setRegistrationComplete(
+        false,
+      );
+
+      navigate(
+        "/login",
+        {
+          replace: true,
+        },
+      );
+    };
 
   const handleChange = (
     event,
@@ -207,15 +272,35 @@ function RegisterForm() {
             formData.termsAccepted,
         });
 
-        showSuccess(
-          "تم إنشاء الحساب بنجاح، سجل دخولك الآن",
+        const passwordForReminder =
+          formData.password;
+
+        setCreatedPassword(
+          passwordForReminder,
         );
 
-        navigate(
-          "/login",
-          {
-            replace: true,
-          },
+        setIsCreatedPasswordVisible(
+          true,
+        );
+
+        setIsPasswordCopied(
+          false,
+        );
+
+        setRegistrationComplete(
+          true,
+        );
+
+        setFormData(
+          initialFormData,
+        );
+
+        setErrors({});
+
+        setTouched({});
+
+        showSuccess(
+          "تم إنشاء الحساب بنجاح",
         );
       } catch (error) {
         showError(
@@ -228,6 +313,320 @@ function RegisterForm() {
         );
       }
     };
+
+  if (
+    registrationComplete
+  ) {
+    return (
+      <section
+        className="
+          overflow-hidden
+          rounded-[28px]
+          border
+          border-emerald-100
+          bg-white
+          shadow-[0_16px_45px_rgba(0,27,61,0.08)]
+        "
+      >
+        <div
+          className="
+            border-b
+            border-emerald-100
+            bg-gradient-to-l
+            from-emerald-50
+            via-white
+            to-white
+            p-5
+          "
+        >
+          <div className="flex items-start gap-3">
+            <div
+              className="
+                flex
+                h-12
+                w-12
+                shrink-0
+                items-center
+                justify-center
+                rounded-2xl
+                bg-emerald-100
+                text-emerald-700
+              "
+            >
+              <CheckCircle2
+                size={26}
+              />
+            </div>
+
+            <div>
+              <h2
+                className="
+                  text-xl
+                  font-bold
+                  text-primary
+                "
+              >
+                حسابك اتعمل بنجاح
+              </h2>
+
+              <p
+                className="
+                  mt-1
+                  text-sm
+                  leading-6
+                  text-text-muted
+                "
+              >
+                احفظ الباسورد دلوقتي قبل ما تروح لصفحة تسجيل الدخول.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4 p-5">
+          <div
+            className="
+              rounded-2xl
+              border
+              border-gray-200
+              bg-[#f8faf9]
+              p-4
+            "
+          >
+            <div
+              className="
+                mb-3
+                flex
+                items-center
+                justify-between
+                gap-3
+              "
+            >
+              <div>
+                <p className="text-sm font-bold text-primary">
+                  الباسورد بتاعك
+                </p>
+
+                <p className="mt-1 text-xs text-text-muted">
+                  هيظهر هنا المرة دي بس.
+                </p>
+              </div>
+
+              <ShieldCheck
+                size={22}
+                className="text-emerald-700"
+              />
+            </div>
+
+            <div
+              className="
+                flex
+                items-center
+                gap-2
+                rounded-xl
+                border
+                border-gray-200
+                bg-white
+                p-2
+              "
+            >
+              <div
+                dir="ltr"
+                className="
+                  min-w-0
+                  flex-1
+                  overflow-x-auto
+                  whitespace-nowrap
+                  rounded-lg
+                  px-3
+                  py-2
+                  text-left
+                  font-mono
+                  text-base
+                  font-bold
+                  tracking-wide
+                  text-primary
+                "
+              >
+                {isCreatedPasswordVisible
+                  ? createdPassword
+                  : "••••••••••••"}
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setIsCreatedPasswordVisible(
+                    (
+                      current,
+                    ) =>
+                      !current,
+                  )
+                }
+                aria-label={
+                  isCreatedPasswordVisible
+                    ? "إخفاء الباسورد"
+                    : "إظهار الباسورد"
+                }
+                className="
+                  flex
+                  h-10
+                  w-10
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-lg
+                  text-gray-500
+                  transition
+                  hover:bg-gray-100
+                "
+              >
+                {isCreatedPasswordVisible ? (
+                  <EyeOff
+                    size={20}
+                  />
+                ) : (
+                  <Eye
+                    size={20}
+                  />
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={
+                  handleCopyPassword
+                }
+                className="
+                  flex
+                  h-10
+                  shrink-0
+                  items-center
+                  gap-2
+                  rounded-lg
+                  bg-primary
+                  px-3
+                  text-sm
+                  font-semibold
+                  text-white
+                  transition
+                  hover:opacity-90
+                  active:scale-[0.98]
+                "
+              >
+                <Copy
+                  size={17}
+                />
+
+                {isPasswordCopied
+                  ? "اتنسخ"
+                  : "نسخ"}
+              </button>
+            </div>
+          </div>
+
+          <div
+            className="
+              rounded-2xl
+              border
+              border-amber-200
+              bg-amber-50
+              p-4
+            "
+          >
+            <div className="flex items-start gap-3">
+              <TriangleAlert
+                size={22}
+                className="
+                  mt-0.5
+                  shrink-0
+                  text-amber-700
+                "
+              />
+
+              <div>
+                <p
+                  className="
+                    font-bold
+                    text-amber-950
+                  "
+                >
+                  مهم جدًا قبل ما تكمل
+                </p>
+
+                <p
+                  className="
+                    mt-2
+                    text-sm
+                    leading-7
+                    text-amber-950/80
+                  "
+                >
+                  فريق الدعم لا يقدر يشوف أو يرجع الباسورد الحالي لأن
+                  كلمة المرور لا يتم حفظها بصورتها الأصلية.
+                </p>
+
+                <p
+                  className="
+                    mt-2
+                    text-sm
+                    font-semibold
+                    leading-7
+                    text-amber-950
+                  "
+                >
+                  لو نسيت الباسورد، تواصل مع الدعم من زر «نسيت الباسورد؟».
+                  بعد التحقق من ملكية الحساب، سيتم حذف الحساب القديم بالكامل
+                  عن طريق الدعم، وبعدها هتعمل حساب جديد.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <p
+            className="
+              text-center
+              text-xs
+              leading-6
+              text-text-muted
+            "
+          >
+            الباسورد موجود في الصفحة دي مؤقتًا فقط، ومش بيتخزن في المتصفح
+            علشان نرجعهولك بعدين.
+          </p>
+
+          <button
+            type="button"
+            onClick={
+              handleContinueToLogin
+            }
+            className="
+              flex
+              h-14
+              w-full
+              items-center
+              justify-center
+              gap-2
+              rounded-full
+              bg-secondary
+              text-lg
+              font-bold
+              text-white
+              transition
+              hover:opacity-90
+              active:scale-[0.98]
+            "
+          >
+            حفظت الباسورد — تسجيل الدخول
+
+            <ArrowLeft
+              size={21}
+            />
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <form
