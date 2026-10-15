@@ -463,8 +463,11 @@ export default function CategoryForm({
 
       {/* Category Image */}
       <div>
-        <label className="mb-2 block text-sm font-semibold text-slate-700">
-          صورة القسم
+        <label className="mb-2 flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">
+          <span>صورة القسم</span>
+          <span className="text-xs font-medium text-slate-400">
+            (مقاس الصورة 1:1)
+          </span>
         </label>
 
         <label
@@ -524,8 +527,11 @@ export default function CategoryForm({
 
       {/* Banner Image */}
       <div>
-        <label className="mb-2 block text-sm font-semibold text-slate-700">
-          صورة البانر
+        <label className="mb-2 flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">
+          <span>صورة البانر</span>
+          <span className="text-xs font-medium text-slate-400">
+            (مقاس الصورة 8:3)
+          </span>
         </label>
 
         <label
