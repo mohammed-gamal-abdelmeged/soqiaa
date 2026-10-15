@@ -1,4 +1,8 @@
 import {
+  useState,
+} from "react";
+
+import {
   ChevronLeft,
   Heart,
   LogOut,
@@ -52,8 +56,44 @@ function AccountPage() {
     error,
   } = useMyProfile();
 
+  const [
+    isLogoutModalOpen,
+    setIsLogoutModalOpen,
+  ] = useState(false);
+
+  const [
+    isLoggingOut,
+    setIsLoggingOut,
+  ] = useState(false);
+
   const handleLogout =
+    () => {
+      setIsLogoutModalOpen(
+        true,
+      );
+    };
+
+  const handleCancelLogout =
+    () => {
+      if (isLoggingOut) {
+        return;
+      }
+
+      setIsLogoutModalOpen(
+        false,
+      );
+    };
+
+  const handleConfirmLogout =
     async () => {
+      if (isLoggingOut) {
+        return;
+      }
+
+      setIsLoggingOut(
+        true,
+      );
+
       try {
         await logout();
 
@@ -69,6 +109,10 @@ function AccountPage() {
         showError(
           logoutError?.message ||
             "تعذر تسجيل الخروج",
+        );
+      } finally {
+        setIsLoggingOut(
+          false,
         );
       }
     };
@@ -496,6 +540,175 @@ function AccountPage() {
           SOUQIA 2026
         </p>
       </main>
+
+      {isLogoutModalOpen && (
+        <div
+          className="
+            fixed
+            inset-0
+            z-[70]
+            flex
+            items-center
+            justify-center
+            bg-[#001b3d]/45
+            px-5
+            backdrop-blur-[2px]
+          "
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="logout-dialog-title"
+        >
+          <div
+            className="
+              w-full
+              max-w-sm
+              overflow-hidden
+              rounded-[28px]
+              border
+              border-red-100
+              bg-white
+              shadow-[0_24px_70px_rgba(0,27,61,0.22)]
+            "
+          >
+            <div
+              className="
+                bg-gradient-to-b
+                from-red-50
+                to-white
+                px-6
+                pb-5
+                pt-6
+                text-center
+              "
+            >
+              <div
+                className="
+                  mx-auto
+                  flex
+                  h-16
+                  w-16
+                  items-center
+                  justify-center
+                  rounded-full
+                  bg-red-100
+                  text-red-500
+                "
+              >
+                <LogOut
+                  size={30}
+                />
+              </div>
+
+              <h2
+                id="logout-dialog-title"
+                className="
+                  mt-4
+                  text-xl
+                  font-bold
+                  text-primary
+                "
+              >
+                هل أنت متأكد يا{" "}
+                {
+                  currentUser.fullName
+                }
+                ؟
+              </h2>
+
+              <p
+                className="
+                  mt-2
+                  text-sm
+                  leading-7
+                  text-gray-500
+                "
+              >
+                هل تريد تسجيل الخروج من حسابك؟
+                تقدر تفضل في الصفحة وتكمل استخدام سوقيا بشكل طبيعي.
+              </p>
+            </div>
+
+            <div
+              className="
+                grid
+                gap-3
+                px-5
+                pb-5
+
+                sm:grid-cols-2
+              "
+            >
+              <button
+                type="button"
+                onClick={
+                  handleCancelLogout
+                }
+                disabled={
+                  isLoggingOut
+                }
+                className="
+                  order-2
+                  min-h-12
+                  rounded-xl
+                  border
+                  border-gray-200
+                  bg-white
+                  px-4
+                  font-semibold
+                  text-primary
+                  transition
+                  hover:bg-gray-50
+                  active:scale-[0.98]
+                  disabled:cursor-not-allowed
+                  disabled:opacity-60
+
+                  sm:order-1
+                "
+              >
+                لا، أريد البقاء
+              </button>
+
+              <button
+                type="button"
+                onClick={
+                  handleConfirmLogout
+                }
+                disabled={
+                  isLoggingOut
+                }
+                className="
+                  order-1
+                  flex
+                  min-h-12
+                  items-center
+                  justify-center
+                  gap-2
+                  rounded-xl
+                  bg-red-500
+                  px-4
+                  font-semibold
+                  text-white
+                  transition
+                  hover:bg-red-600
+                  active:scale-[0.98]
+                  disabled:cursor-wait
+                  disabled:opacity-60
+
+                  sm:order-2
+                "
+              >
+                <LogOut
+                  size={19}
+                />
+
+                {isLoggingOut
+                  ? "جاري تسجيل الخروج..."
+                  : "نعم، تسجيل الخروج"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <BottomNav />
     </div>
