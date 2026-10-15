@@ -4,7 +4,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  Printer,
+  Download,
 } from "lucide-react";
 
 import {
@@ -56,6 +56,11 @@ function CheckoutPage() {
   const [
     isSuccessOpen,
     setIsSuccessOpen,
+  ] = useState(false);
+
+  const [
+    isSavingInvoice,
+    setIsSavingInvoice,
   ] = useState(false);
 
   const [
@@ -372,195 +377,414 @@ function CheckoutPage() {
 
   /*
   |--------------------------------------------------------------------------
-  | Print
+  | Save Invoice As Image
   |--------------------------------------------------------------------------
   */
 
-  const handlePrint = () => {
-    const invoice =
-      document.getElementById(
-        "invoice",
-      );
+  const blobToDataUrl =
+    (blob) =>
+      new Promise(
+        (
+          resolve,
+          reject,
+        ) => {
+          const reader =
+            new FileReader();
 
-    if (!invoice) {
-      showError(
-        "تعذر تجهيز الفاتورة للطباعة",
-      );
+          reader.onload =
+            () =>
+              resolve(
+                reader.result,
+              );
 
-      return;
-    }
+          reader.onerror =
+            reject;
 
-    const printWindow =
-      window.open(
-        "",
-        "_blank",
-        "width=900,height=700",
-      );
-
-    if (!printWindow) {
-      showError(
-        "من فضلك اسمح بفتح نافذة الطباعة",
-      );
-
-      return;
-    }
-
-    const styles = Array.from(
-      document.querySelectorAll(
-        'link[rel="stylesheet"], style',
-      ),
-    )
-      .map(
-        (style) =>
-          style.outerHTML,
-      )
-      .join("");
-
-    printWindow.document.write(`
-      <!doctype html>
-
-      <html
-        lang="ar"
-        dir="rtl"
-      >
-        <head>
-          <meta charset="UTF-8" />
-
-          <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1.0"
-          />
-
-          <title>
-            فاتورة سوقيا
-          </title>
-
-          ${styles}
-
-          <style>
-            @page {
-              size: A4;
-              margin: 14mm;
-            }
-
-            * {
-              box-sizing: border-box;
-            }
-
-            html,
-            body {
-              margin: 0;
-              padding: 0;
-              width: 100%;
-              min-height: auto;
-              background: white;
-            }
-
-            body {
-              direction: rtl;
-              color: #191c1d;
-            }
-
-            .print-page {
-              width: 100%;
-              margin: 0 auto;
-            }
-
-            #invoice {
-              width: 100% !important;
-              max-width: 100% !important;
-
-              margin: 0 auto !important;
-              padding: 0 !important;
-
-              border-radius: 0 !important;
-              background: white !important;
-              box-shadow: none !important;
-              overflow: visible !important;
-            }
-
-            #invoice img {
-              max-width: 100%;
-            }
-
-            #invoice > div {
-              break-inside: avoid;
-              page-break-inside: avoid;
-            }
-
-            @media print {
-              html,
-              body {
-                width: 100%;
-                margin: 0 !important;
-                padding: 0 !important;
-                background: white !important;
-              }
-
-              .print-page {
-                width: 100%;
-                margin: 0;
-                padding: 0;
-              }
-
-              #invoice {
-                width: 100% !important;
-                max-width: 100% !important;
-
-                margin: 0 !important;
-                padding: 0 !important;
-
-                border-radius: 0 !important;
-                box-shadow: none !important;
-
-                -webkit-print-color-adjust:
-                  exact !important;
-
-                print-color-adjust:
-                  exact !important;
-              }
-            }
-          </style>
-        </head>
-
-        <body>
-          <main class="print-page">
-            ${invoice.outerHTML}
-          </main>
-        </body>
-      </html>
-    `);
-
-    printWindow.document.close();
-
-    const printInvoice =
-      () => {
-        printWindow.focus();
-
-        printWindow.print();
-
-        printWindow.close();
-      };
-
-    if (
-      printWindow.document
-        .readyState ===
-      "complete"
-    ) {
-      setTimeout(
-        printInvoice,
-        300,
-      );
-    } else {
-      printWindow.onload =
-        () => {
-          setTimeout(
-            printInvoice,
-            300,
+          reader.readAsDataURL(
+            blob,
           );
-        };
-    }
-  };
+        },
+      );
+
+  const inlineInvoiceImages =
+    async (element) => {
+      const imageElements =
+        Array.from(
+          element.querySelectorAll(
+            "img",
+          ),
+        );
+
+      await Promise.all(
+        imageElements.map(
+          async (
+            imageElement,
+          ) => {
+            const source =
+              imageElement.currentSrc ||
+              imageElement.src;
+
+            if (
+              !source ||
+              source.startsWith(
+                "data:",
+              )
+            ) {
+              return;
+            }
+
+            try {
+              const response =
+                await fetch(
+                  source,
+                  {
+                    credentials:
+                      "same-origin",
+                  },
+                );
+
+              if (
+                !response.ok
+              ) {
+                return;
+              }
+
+              const imageBlob =
+                await response.blob();
+
+              imageElement.src =
+                await blobToDataUrl(
+                  imageBlob,
+                );
+            } catch {
+              /*
+               * لو تعذر تحويل صورة ثانوية،
+               * نكمل حفظ الفاتورة بدل ما نوقف الطلب.
+               */
+            }
+          },
+        ),
+      );
+    };
+
+  const handleSaveInvoice =
+    async () => {
+      if (
+        isSavingInvoice
+      ) {
+        return;
+      }
+
+      const invoice =
+        document.getElementById(
+          "invoice",
+        );
+
+      if (!invoice) {
+        showError(
+          "تعذر تجهيز الفاتورة للحفظ",
+        );
+
+        return;
+      }
+
+      setIsSavingInvoice(
+        true,
+      );
+
+      let stagingContainer =
+        null;
+
+      let svgUrl =
+        null;
+
+      try {
+        const invoiceClone =
+          invoice.cloneNode(
+            true,
+          );
+
+        await inlineInvoiceImages(
+          invoiceClone,
+        );
+
+        stagingContainer =
+          document.createElement(
+            "div",
+          );
+
+        Object.assign(
+          stagingContainer.style,
+          {
+            position:
+              "fixed",
+            left:
+              "-10000px",
+            top:
+              "0",
+            width:
+              "760px",
+            background:
+              "#ffffff",
+            pointerEvents:
+              "none",
+          },
+        );
+
+        Object.assign(
+          invoiceClone.style,
+          {
+            width:
+              "760px",
+            maxWidth:
+              "760px",
+            background:
+              "#ffffff",
+          },
+        );
+
+        stagingContainer.appendChild(
+          invoiceClone,
+        );
+
+        document.body.appendChild(
+          stagingContainer,
+        );
+
+        if (
+          document.fonts?.ready
+        ) {
+          await document.fonts.ready;
+        }
+
+        const width =
+          760;
+
+        const height =
+          Math.ceil(
+            invoiceClone
+              .getBoundingClientRect()
+              .height,
+          );
+
+        if (
+          !height ||
+          height < 1
+        ) {
+          throw new Error(
+            "Invalid invoice height",
+          );
+        }
+
+        const serializedInvoice =
+          new XMLSerializer()
+            .serializeToString(
+              invoiceClone,
+            );
+
+        const svgMarkup =
+          `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+            <foreignObject x="0" y="0" width="100%" height="100%">
+              <div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;background:#ffffff;">
+                ${serializedInvoice}
+              </div>
+            </foreignObject>
+          </svg>`;
+
+        const svgBlob =
+          new Blob(
+            [
+              svgMarkup,
+            ],
+            {
+              type:
+                "image/svg+xml;charset=utf-8",
+            },
+          );
+
+        svgUrl =
+          URL.createObjectURL(
+            svgBlob,
+          );
+
+        const renderedImage =
+          new Image();
+
+        await new Promise(
+          (
+            resolve,
+            reject,
+          ) => {
+            renderedImage.onload =
+              resolve;
+
+            renderedImage.onerror =
+              reject;
+
+            renderedImage.src =
+              svgUrl;
+          },
+        );
+
+        const scale =
+          2;
+
+        const canvas =
+          document.createElement(
+            "canvas",
+          );
+
+        canvas.width =
+          width *
+          scale;
+
+        canvas.height =
+          height *
+          scale;
+
+        const context =
+          canvas.getContext(
+            "2d",
+          );
+
+        if (!context) {
+          throw new Error(
+            "Canvas unavailable",
+          );
+        }
+
+        context.scale(
+          scale,
+          scale,
+        );
+
+        context.fillStyle =
+          "#ffffff";
+
+        context.fillRect(
+          0,
+          0,
+          width,
+          height,
+        );
+
+        context.drawImage(
+          renderedImage,
+          0,
+          0,
+          width,
+          height,
+        );
+
+        const pngBlob =
+          await new Promise(
+            (
+              resolve,
+              reject,
+            ) => {
+              canvas.toBlob(
+                (blob) => {
+                  if (blob) {
+                    resolve(
+                      blob,
+                    );
+
+                    return;
+                  }
+
+                  reject(
+                    new Error(
+                      "PNG generation failed",
+                    ),
+                  );
+                },
+                "image/png",
+                1,
+              );
+            },
+          );
+
+        const downloadUrl =
+          URL.createObjectURL(
+            pngBlob,
+          );
+
+        const link =
+          document.createElement(
+            "a",
+          );
+
+        const safeOrderNumber =
+          String(
+            completedOrder
+              ?.orderNumber ||
+              "order",
+          ).replace(
+            /[^a-zA-Z0-9_-]/g,
+            "-",
+          );
+
+        link.href =
+          downloadUrl;
+
+        link.download =
+          `soqiaa-invoice-${safeOrderNumber}.png`;
+
+        document.body.appendChild(
+          link,
+        );
+
+        link.click();
+
+        link.remove();
+
+        setTimeout(
+          () =>
+            URL.revokeObjectURL(
+              downloadUrl,
+            ),
+          1000,
+        );
+
+        showSuccess(
+          "تم حفظ الفاتورة على جهازك",
+        );
+
+        setIsSuccessOpen(
+          false,
+        );
+
+        navigate(
+          "/orders",
+          {
+            replace: true,
+          },
+        );
+      } catch {
+        showError(
+          "تعذر حفظ الفاتورة كصورة، حاول مرة أخرى",
+        );
+      } finally {
+        if (
+          svgUrl
+        ) {
+          URL.revokeObjectURL(
+            svgUrl,
+          );
+        }
+
+        if (
+          stagingContainer
+            ?.parentNode
+        ) {
+          stagingContainer.remove();
+        }
+
+        setIsSavingInvoice(
+          false,
+        );
+      }
+    };
 
   /*
   |--------------------------------------------------------------------------
@@ -936,7 +1160,13 @@ function CheckoutPage() {
               <button
                 type="button"
                 onClick={
-                  handlePrint
+                  handleSaveInvoice
+                }
+                disabled={
+                  isSavingInvoice
+                }
+                aria-busy={
+                  isSavingInvoice
                 }
                 className="
                   flex
@@ -949,19 +1179,27 @@ function CheckoutPage() {
                   py-3
                   font-semibold
                   text-white
+                  transition
+                  disabled:cursor-wait
+                  disabled:opacity-60
                 "
               >
-                <Printer
+                <Download
                   size={20}
                 />
 
-                اطبع فاتورتك بأمان
+                {isSavingInvoice
+                  ? "جاري حفظ الفاتورة..."
+                  : "احفظ فاتورتك"}
               </button>
 
               <button
                 type="button"
                 onClick={
                   handleFinishOrder
+                }
+                disabled={
+                  isSavingInvoice
                 }
                 className="
                   flex-1
@@ -970,6 +1208,8 @@ function CheckoutPage() {
                   border-outline
                   py-3
                   font-semibold
+                  disabled:cursor-not-allowed
+                  disabled:opacity-60
                 "
               >
                 تم
