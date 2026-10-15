@@ -1,3 +1,5 @@
+import DashboardPageSkeleton from "../../../components/loaders/DashboardPageSkeleton";
+
 import DashboardStats from "../components/DashboardStats";
 import LatestOrders from "../components/LatestOrders";
 import QuickActions from "../components/QuickActions";
@@ -16,9 +18,7 @@ export default function DashboardPage() {
 
   if (isPending) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <span className="h-9 w-9 animate-spin rounded-full border-2 border-slate-200 border-t-emerald-700" />
-      </div>
+      <DashboardPageSkeleton />
     );
   }
 
