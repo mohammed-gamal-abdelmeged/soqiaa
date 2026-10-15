@@ -1,4 +1,4 @@
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, TriangleAlert } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import ForgotPasswordForm from '../components/ForgotPasswordForm'
@@ -38,8 +38,38 @@ function ForgotPasswordPage() {
 
           <p className="mt-2 leading-7 text-text-muted">
             اكتب رقم الموبايل المسجل على حسابك، وهتقدر تتواصل مباشرة
-            مع فريق الدعم لمساعدتك في استعادة الحساب.
+            مع فريق الدعم لمساعدتك بخصوص الحساب.
           </p>
+        </div>
+
+        <div
+          className="
+            mb-6
+            rounded-2xl
+            border
+            border-amber-200
+            bg-amber-50
+            p-4
+          "
+        >
+          <div className="flex items-start gap-3">
+            <TriangleAlert
+              size={22}
+              className="mt-0.5 shrink-0 text-amber-700"
+            />
+
+            <div>
+              <p className="font-bold text-amber-950">
+                قبل ما تتواصل مع الدعم
+              </p>
+
+              <p className="mt-2 text-sm leading-7 text-amber-950/80">
+                فريق الدعم لا يقدر يشوف أو يرجع الباسورد الحالي.
+                بعد التحقق من ملكية الحساب، الحساب القديم سيتم حذفه بالكامل
+                عن طريق الدعم، وبعدها تقدر تعمل حساب جديد.
+              </p>
+            </div>
+          </div>
         </div>
 
         <ForgotPasswordForm />
