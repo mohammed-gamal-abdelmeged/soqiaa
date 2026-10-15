@@ -95,7 +95,6 @@ function AccountPage() {
       );
 
       try {
-      try {
         await logout();
 
         navigate(
