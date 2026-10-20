@@ -5,8 +5,31 @@ import {
   UserRound,
 } from "lucide-react";
 
-function normalizePhone(phone) {
-  return String(phone || "").replace(/\D/g, "");
+function normalizeWhatsAppPhone(phone) {
+  const digits = String(phone || "").replace(/\D/g, "");
+
+  // WhatsApp wa.me links require country code digits only (no "+" or leading 0).
+  // Egyptian mobile: 01012345678 -> 201012345678
+  if (/^01[0125]\d{8}$/.test(digits)) {
+    return `20${digits.slice(1)}`;
+  }
+
+  // Already formatted as +20... or 20...
+  if (/^201[0125]\d{8}$/.test(digits)) {
+    return digits;
+  }
+
+  // International prefix: 0020...
+  if (/^00201[0125]\d{8}$/.test(digits)) {
+    return digits.slice(2);
+  }
+
+  // Egyptian mobile without the local leading zero: 1012345678
+  if (/^1[0125]\d{8}$/.test(digits)) {
+    return `20${digits}`;
+  }
+
+  return null;
 }
 
 export default function OrderCustomerCard({
@@ -27,21 +50,19 @@ export default function OrderCustomerCard({
     );
   }
 
-  const phone = normalizePhone(customer.phone);
+  const whatsappPhone = normalizeWhatsAppPhone(customer.phone);
 
   const message = encodeURIComponent(
     `مرحبا ${customer.name} بخصوص طلبك من سوقيا`,
   );
 
-  const whatsappUrl =
-    phone
-      ? `https://wa.me/${phone}?text=${message}`
-      : "#";
+  const whatsappUrl = whatsappPhone
+    ? `https://wa.me/${whatsappPhone}?text=${message}`
+    : null;
 
-  const phoneUrl =
-    phone
-      ? `tel:${customer.phone}`
-      : "#";
+  const phoneUrl = customer.phone
+    ? `tel:${customer.phone}`
+    : "#";
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -84,15 +105,17 @@ export default function OrderCustomerCard({
                   <Phone size={17} />
                 </a>
 
-                <a
-                  href={whatsappUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 transition hover:bg-emerald-100"
-                  aria-label="إرسال رسالة واتساب"
-                >
-                  <MessageCircle size={18} />
-                </a>
+                {whatsappUrl && (
+                  <a
+                    href={whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 transition hover:bg-emerald-100"
+                    aria-label="إرسال رسالة واتساب"
+                  >
+                    <MessageCircle size={18} />
+                  </a>
+                )}
               </>
             )}
           </div>
