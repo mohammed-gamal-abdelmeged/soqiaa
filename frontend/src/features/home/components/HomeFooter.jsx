@@ -3,6 +3,10 @@ import { Link } from "react-router-dom";
 
 import logo from "../../../assets/images/logo.png";
 
+const FACEBOOK_URL = "https://www.facebook.com/share/1CWh8L5tyY/";
+const INSTAGRAM_URL = "https://www.instagram.com/soqiaa_/?mdxt=MWJrOHNtYm1nc3A2bg==";
+const WHATSAPP_URL = "https://wa.me/201099200046";
+
 function HomeFooter() {
   return (
     <footer
@@ -64,21 +68,21 @@ function HomeFooter() {
           <div className="mt-5 flex gap-2">
             <SocialButton
               label="Facebook"
-              href="#"
+              href={FACEBOOK_URL}
             >
               <FacebookIcon />
             </SocialButton>
 
             <SocialButton
               label="Instagram"
-              href="#"
+              href={INSTAGRAM_URL}
             >
               <InstagramIcon />
             </SocialButton>
 
             <SocialButton
               label="WhatsApp"
-              href="#"
+              href={WHATSAPP_URL}
             >
               <WhatsAppIcon />
             </SocialButton>
@@ -130,7 +134,7 @@ function HomeFooter() {
 
           <div className="space-y-3">
             <a
-              href="tel:01000000000"
+              href="tel:+201061081014"
               className="
                 flex items-center gap-3
                 rounded-2xl border
@@ -161,15 +165,52 @@ function HomeFooter() {
                   dir="ltr"
                   className="mt-1 block text-xs"
                 >
-                  0100 000 0000
+                  01061081014
                 </strong>
               </div>
             </a>
 
             <a
-              href="https://wa.me/201000000000"
+              href="tel:+201099200046"
+              className="
+                flex items-center gap-3
+                rounded-2xl border
+                border-white/10
+                bg-white/5 p-3
+                transition
+                hover:bg-white/10
+              "
+            >
+              <span
+                className="
+                  flex h-10 w-10
+                  shrink-0 items-center
+                  justify-center rounded-xl
+                  bg-green-400/10
+                  text-green-300
+                "
+              >
+                <Phone size={18} />
+              </span>
+
+              <div>
+                <span className="block text-[10px] text-white/50">
+                  خدمة العملاء
+                </span>
+
+                <strong
+                  dir="ltr"
+                  className="mt-1 block text-xs"
+                >
+                  01099200046
+                </strong>
+              </div>
+            </a>
+
+            <a
+              href={WHATSAPP_URL}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="
                 flex items-center gap-3
                 rounded-2xl border
@@ -200,7 +241,7 @@ function HomeFooter() {
                   dir="ltr"
                   className="mt-1 block text-xs"
                 >
-                  0100 000 0000
+                  01099200046
                 </strong>
               </div>
             </a>
@@ -243,7 +284,7 @@ function SocialButton({
       href={href}
       aria-label={label}
       target="_blank"
-      rel="noreferrer"
+      rel="noopener noreferrer"
       className="
         flex h-10 w-10
         items-center justify-center
